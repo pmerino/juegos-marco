@@ -1,0 +1,513 @@
+<meta charset="utf-8">
+<title>Modo Carrera - Manager de Fútbol</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Trebuchet MS", Verdana, sans-serif;
+    background: linear-gradient(160deg, #128a33 0%, #17a84e 100%);
+    color: #fff; min-height: 100vh; padding: 14px; text-align: center;
+  }
+  h1 { font-size: 26px; text-shadow: 2px 2px 0 #044d19; margin-bottom: 4px; }
+  .subt { opacity: .9; font-size: 14px; margin-bottom: 12px; }
+  #app { max-width: 460px; margin: 0 auto; }
+
+  .cabecera {
+    background: rgba(0,0,0,.28); border: 2px solid rgba(255,255,255,.5);
+    border-radius: 14px; padding: 10px 14px; margin-bottom: 12px;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .cab-club { font-size: 19px; font-weight: bold; }
+  .cab-datos { font-size: 14px; opacity: .95; }
+
+  .caja {
+    background: rgba(0,0,0,.22); border: 2px solid rgba(255,255,255,.4);
+    border-radius: 14px; padding: 14px; margin-bottom: 12px;
+  }
+  .titulo-caja { font-weight: bold; font-size: 16px; margin-bottom: 8px; }
+
+  button {
+    font-family: inherit; font-weight: bold; cursor: pointer;
+    border: none; border-radius: 20px; transition: transform .08s;
+  }
+  button:active { transform: translateY(2px); }
+  .btn-grande {
+    font-size: 21px; color: #0b6623; background: #ffdd33;
+    padding: 15px 20px; box-shadow: 0 5px 0 #c9a600; width: 100%; margin-bottom: 12px;
+  }
+  .btn-nav {
+    font-size: 15px; color: #fff; background: rgba(0,0,0,.3);
+    border: 2px solid rgba(255,255,255,.55); padding: 10px 12px;
+  }
+  .nav { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .btn-volver {
+    font-size: 15px; background: #fff; color: #0b6623; padding: 9px 18px; margin-top: 10px;
+  }
+
+  /* Elegir club */
+  .clubes-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .club-op {
+    width: 130px; background: rgba(255,255,255,.92); color: #222;
+    border-radius: 12px; padding: 12px 8px; cursor: pointer; border: 3px solid #c9a600;
+  }
+  .club-op:hover { transform: translateY(-4px); }
+  .club-escudo { font-size: 38px; }
+  .club-nom { font-weight: bold; font-size: 15px; margin: 3px 0; }
+  .club-fuerza { font-size: 13px; }
+  .fuerza-pill {
+    display: inline-block; background: #0b6623; color: #fff;
+    border-radius: 12px; padding: 1px 9px; font-weight: bold;
+  }
+
+  /* Resultado del partido */
+  .mi-resultado { font-size: 30px; font-weight: 900; margin: 6px 0; }
+  .res-linea {
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(255,255,255,.9); color: #222; border-radius: 8px;
+    padding: 6px 10px; margin-bottom: 5px; font-size: 14px;
+  }
+  .res-linea.tuyo { background: #ffe28a; font-weight: bold; }
+
+  /* Tablas */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { padding: 5px 4px; }
+  thead th { border-bottom: 2px solid rgba(255,255,255,.5); }
+  tbody tr { border-bottom: 1px solid rgba(255,255,255,.2); }
+  tbody tr.tuyo { background: rgba(255,221,51,.25); font-weight: bold; }
+  .col-nom { text-align: left; }
+
+  /* Jugadores */
+  .jug {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,.9); color: #222; border-radius: 8px;
+    padding: 7px 10px; margin-bottom: 5px; text-align: left;
+  }
+  .jug-media {
+    background: #0b6623; color: #fff; border-radius: 8px; padding: 1px 8px;
+    font-weight: bold; min-width: 34px; text-align: center;
+  }
+  .jug-pos { font-size: 12px; opacity: .8; width: 34px; }
+  .jug-nom { flex: 1; font-weight: bold; }
+  .btn-comprar { background: #0b6623; color: #fff; font-size: 13px; padding: 6px 12px; }
+  .btn-vender { background: #c0392b; color: #fff; font-size: 13px; padding: 6px 12px; }
+  .btn-comprar:disabled { background: #999; }
+
+  #toast {
+    display: none; position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    background: #fff; color: #0b6623; font-weight: bold; padding: 11px 18px;
+    border-radius: 12px; box-shadow: 0 5px 18px rgba(0,0,0,.4); z-index: 100; max-width: 90%;
+  }
+  .fin-emoji { font-size: 60px; }
+  .fin-titulo { font-size: 24px; font-weight: 900; margin: 6px 0; }
+</style>
+
+<h1>⚽ Modo Carrera</h1>
+<div class="subt">Dirige tu club, gana la liga y ficha cracks</div>
+
+<div id="app"></div>
+<div id="toast"></div>
+
+<script>
+  // ===== Datos =====
+  const CLUBES = [
+    { nombre:"Real Madrid", escudo:"👑", fuerza:88 },
+    { nombre:"Man City",    escudo:"🌆", fuerza:88 },
+    { nombre:"Barcelona",   escudo:"🎨", fuerza:86 },
+    { nombre:"Bayern",      escudo:"🍺", fuerza:86 },
+    { nombre:"PSG",         escudo:"🗼", fuerza:85 },
+    { nombre:"Liverpool",   escudo:"🦅", fuerza:85 },
+    { nombre:"Inter",       escudo:"🐍", fuerza:83 },
+    { nombre:"Arsenal",     escudo:"🎯", fuerza:83 },
+    { nombre:"Atlético",    escudo:"🐻", fuerza:82 },
+    { nombre:"Milan",       escudo:"😈", fuerza:81 },
+  ];
+
+  // Plantillas reales de cada club (nombre, posición, media)
+  const PLANTILLAS = {
+    "Real Madrid": [
+      {n:"Courtois",pos:"POR",m:90},{n:"Lunin",pos:"POR",m:82},
+      {n:"Carvajal",pos:"DEF",m:86},{n:"Militão",pos:"DEF",m:85},{n:"Rüdiger",pos:"DEF",m:87},{n:"Mendy",pos:"DEF",m:83},{n:"Alaba",pos:"DEF",m:84},{n:"L. Vázquez",pos:"DEF",m:79},
+      {n:"Valverde",pos:"MED",m:88},{n:"Bellingham",pos:"MED",m:90},{n:"Tchouaméni",pos:"MED",m:85},{n:"Camavinga",pos:"MED",m:85},{n:"Modrić",pos:"MED",m:85},{n:"Ceballos",pos:"MED",m:80},
+      {n:"Mbappé",pos:"DEL",m:91},{n:"Vinícius",pos:"DEL",m:90},{n:"Rodrygo",pos:"DEL",m:86},{n:"Endrick",pos:"DEL",m:80},{n:"Brahim",pos:"DEL",m:82},
+    ],
+    "Man City": [
+      {n:"Ederson",pos:"POR",m:88},{n:"Ortega",pos:"POR",m:82},
+      {n:"Walker",pos:"DEF",m:85},{n:"Rúben Dias",pos:"DEF",m:88},{n:"Gvardiol",pos:"DEF",m:86},{n:"Aké",pos:"DEF",m:84},{n:"Stones",pos:"DEF",m:85},{n:"Akanji",pos:"DEF",m:84},
+      {n:"Rodri",pos:"MED",m:91},{n:"De Bruyne",pos:"MED",m:89},{n:"Bernardo Silva",pos:"MED",m:87},{n:"Foden",pos:"MED",m:88},{n:"Kovačić",pos:"MED",m:84},{n:"Nunes",pos:"MED",m:82},
+      {n:"Haaland",pos:"DEL",m:91},{n:"Grealish",pos:"DEL",m:84},{n:"Doku",pos:"DEL",m:84},{n:"Savinho",pos:"DEL",m:82},
+    ],
+    "Barcelona": [
+      {n:"Ter Stegen",pos:"POR",m:88},{n:"Peña",pos:"POR",m:80},
+      {n:"Koundé",pos:"DEF",m:85},{n:"Cubarsí",pos:"DEF",m:84},{n:"Araújo",pos:"DEF",m:85},{n:"Balde",pos:"DEF",m:83},{n:"Christensen",pos:"DEF",m:83},{n:"I. Martínez",pos:"DEF",m:82},
+      {n:"Pedri",pos:"MED",m:88},{n:"Gavi",pos:"MED",m:85},{n:"De Jong",pos:"MED",m:87},{n:"Fermín",pos:"MED",m:81},{n:"Casadó",pos:"MED",m:79},{n:"Dani Olmo",pos:"MED",m:85},
+      {n:"Lewandowski",pos:"DEL",m:88},{n:"Lamine Yamal",pos:"DEL",m:89},{n:"Raphinha",pos:"DEL",m:86},{n:"Ferran Torres",pos:"DEL",m:82},
+    ],
+    "Bayern": [
+      {n:"Neuer",pos:"POR",m:87},{n:"Ulreich",pos:"POR",m:79},
+      {n:"Kimmich",pos:"DEF",m:87},{n:"Upamecano",pos:"DEF",m:85},{n:"Kim Min-jae",pos:"DEF",m:84},{n:"Davies",pos:"DEF",m:85},{n:"Dier",pos:"DEF",m:82},{n:"Laimer",pos:"DEF",m:82},
+      {n:"Musiala",pos:"MED",m:88},{n:"Goretzka",pos:"MED",m:84},{n:"Palhinha",pos:"MED",m:84},{n:"Sané",pos:"MED",m:85},{n:"Olise",pos:"MED",m:85},{n:"Pavlović",pos:"MED",m:80},
+      {n:"Kane",pos:"DEL",m:90},{n:"Gnabry",pos:"DEL",m:83},{n:"Coman",pos:"DEL",m:84},{n:"Müller",pos:"DEL",m:82},
+    ],
+    "PSG": [
+      {n:"Donnarumma",pos:"POR",m:88},{n:"Safonov",pos:"POR",m:81},
+      {n:"Hakimi",pos:"DEF",m:86},{n:"Marquinhos",pos:"DEF",m:86},{n:"Škriniar",pos:"DEF",m:84},{n:"Nuno Mendes",pos:"DEF",m:85},{n:"L. Hernández",pos:"DEF",m:83},{n:"Beraldo",pos:"DEF",m:79},
+      {n:"Vitinha",pos:"MED",m:86},{n:"Zaïre-Emery",pos:"MED",m:83},{n:"Fabián Ruiz",pos:"MED",m:85},{n:"João Neves",pos:"MED",m:83},
+      {n:"Dembélé",pos:"DEL",m:87},{n:"Barcola",pos:"DEL",m:83},{n:"Kolo Muani",pos:"DEL",m:83},{n:"G. Ramos",pos:"DEL",m:82},{n:"Asensio",pos:"DEL",m:83},
+    ],
+    "Liverpool": [
+      {n:"Alisson",pos:"POR",m:89},{n:"Kelleher",pos:"POR",m:81},
+      {n:"Alexander-Arnold",pos:"DEF",m:86},{n:"Van Dijk",pos:"DEF",m:89},{n:"Konaté",pos:"DEF",m:84},{n:"Robertson",pos:"DEF",m:85},{n:"Gomez",pos:"DEF",m:81},{n:"Bradley",pos:"DEF",m:78},
+      {n:"Mac Allister",pos:"MED",m:86},{n:"Szoboszlai",pos:"MED",m:84},{n:"Gravenberch",pos:"MED",m:83},{n:"Curtis Jones",pos:"MED",m:81},{n:"Endo",pos:"MED",m:80},
+      {n:"Salah",pos:"DEL",m:89},{n:"Núñez",pos:"DEL",m:83},{n:"Luis Díaz",pos:"DEL",m:85},{n:"Gakpo",pos:"DEL",m:84},{n:"Jota",pos:"DEL",m:84},
+    ],
+    "Inter": [
+      {n:"Sommer",pos:"POR",m:84},{n:"Di Gennaro",pos:"POR",m:74},
+      {n:"Pavard",pos:"DEF",m:84},{n:"Bastoni",pos:"DEF",m:86},{n:"Acerbi",pos:"DEF",m:82},{n:"Dimarco",pos:"DEF",m:85},{n:"Darmian",pos:"DEF",m:80},{n:"De Vrij",pos:"DEF",m:82},
+      {n:"Barella",pos:"MED",m:87},{n:"Çalhanoğlu",pos:"MED",m:86},{n:"Mkhitaryan",pos:"MED",m:82},{n:"Frattesi",pos:"MED",m:82},{n:"Zieliński",pos:"MED",m:83},
+      {n:"Lautaro",pos:"DEL",m:89},{n:"Thuram",pos:"DEL",m:85},{n:"Taremi",pos:"DEL",m:82},{n:"Arnautović",pos:"DEL",m:79},
+    ],
+    "Arsenal": [
+      {n:"Raya",pos:"POR",m:85},{n:"Ramsdale",pos:"POR",m:81},
+      {n:"White",pos:"DEF",m:84},{n:"Saliba",pos:"DEF",m:87},{n:"Gabriel",pos:"DEF",m:86},{n:"Timber",pos:"DEF",m:82},{n:"Calafiori",pos:"DEF",m:83},{n:"Zinchenko",pos:"DEF",m:81},
+      {n:"Ødegaard",pos:"MED",m:88},{n:"Rice",pos:"MED",m:87},{n:"Partey",pos:"MED",m:83},{n:"Merino",pos:"MED",m:83},{n:"Havertz",pos:"MED",m:84},{n:"Jorginho",pos:"MED",m:82},
+      {n:"Saka",pos:"DEL",m:88},{n:"Martinelli",pos:"DEL",m:84},{n:"Trossard",pos:"DEL",m:83},{n:"G. Jesus",pos:"DEL",m:83},
+    ],
+    "Atlético": [
+      {n:"Oblak",pos:"POR",m:87},{n:"Musso",pos:"POR",m:78},
+      {n:"Molina",pos:"DEF",m:82},{n:"Giménez",pos:"DEF",m:84},{n:"Le Normand",pos:"DEF",m:83},{n:"Reinildo",pos:"DEF",m:80},{n:"Witsel",pos:"DEF",m:80},{n:"Galán",pos:"DEF",m:80},
+      {n:"De Paul",pos:"MED",m:84},{n:"Barrios",pos:"MED",m:81},{n:"Koke",pos:"MED",m:82},{n:"Llorente",pos:"MED",m:83},{n:"Gallagher",pos:"MED",m:82},{n:"Riquelme",pos:"MED",m:79},
+      {n:"Griezmann",pos:"DEL",m:87},{n:"Julián Álvarez",pos:"DEL",m:87},{n:"Sørloth",pos:"DEL",m:82},{n:"Correa",pos:"DEL",m:80},
+    ],
+    "Milan": [
+      {n:"Maignan",pos:"POR",m:87},{n:"Sportiello",pos:"POR",m:76},
+      {n:"Calabria",pos:"DEF",m:79},{n:"Tomori",pos:"DEF",m:83},{n:"Pavlović",pos:"DEF",m:80},{n:"Theo Hernández",pos:"DEF",m:85},{n:"Gabbia",pos:"DEF",m:79},{n:"Emerson",pos:"DEF",m:79},
+      {n:"Reijnders",pos:"MED",m:84},{n:"Fofana",pos:"MED",m:82},{n:"Loftus-Cheek",pos:"MED",m:82},{n:"Musah",pos:"MED",m:79},{n:"Pulisic",pos:"MED",m:85},
+      {n:"Rafael Leão",pos:"DEL",m:86},{n:"Morata",pos:"DEL",m:83},{n:"Abraham",pos:"DEL",m:79},{n:"Chukwueze",pos:"DEL",m:80},
+    ],
+  };
+
+  // Mercado de fichajes: estrellas reales de otros clubes
+  const MERCADO_REAL = [
+    {n:"Osimhen",pos:"DEL",m:88},{n:"Cole Palmer",pos:"MED",m:88},{n:"Wirtz",pos:"MED",m:88},{n:"Gyökeres",pos:"DEL",m:87},
+    {n:"Bruno Fernandes",pos:"MED",m:87},{n:"Isak",pos:"DEL",m:86},{n:"Nico Williams",pos:"DEL",m:86},{n:"Bruno Guimarães",pos:"MED",m:86},
+    {n:"Enzo Fernández",pos:"MED",m:85},{n:"Caicedo",pos:"MED",m:85},{n:"Xavi Simons",pos:"MED",m:85},{n:"Diogo Costa",pos:"POR",m:85},
+    {n:"Watkins",pos:"DEL",m:84},{n:"Guirassy",pos:"DEL",m:84},{n:"Kudus",pos:"DEL",m:84},{n:"Retegui",pos:"DEL",m:84},{n:"Grimaldo",pos:"DEF",m:84},
+    {n:"Openda",pos:"DEL",m:83},{n:"Nkunku",pos:"DEL",m:83},{n:"Rashford",pos:"DEL",m:83},{n:"Schlotterbeck",pos:"DEF",m:83},{n:"Tapsoba",pos:"DEF",m:83},{n:"Frimpong",pos:"DEF",m:83},
+    {n:"Højlund",pos:"DEL",m:82},{n:"Bowen",pos:"DEL",m:82},{n:"Rogers",pos:"MED",m:82},{n:"Garnacho",pos:"DEL",m:81},{n:"Wharton",pos:"MED",m:80},
+  ];
+  const NOMBRES = ["Vega","Ruiz","Torres","Silva","Costa","Moreno","Rossi","Ferrari","Bauer","Klein",
+    "Petit","Dubois","Novak","Kovač","Nielsen","Berg","Okafor","Diallo","Nakamura","Kim","Santos",
+    "Reyes","Bianchi","Romano","Weber","Fischer","Larsson","Ibáñez","Marchand","Toledo","Cruz",
+    "Nowak","Haas","Volkov","Marino","Blanco","Herrera","Sartori","Lindqvist","Adebayo"];
+  const POS_EMOJI = { POR:"🧤", DEF:"🛡️", MED:"🎯", DEL:"⚡" };
+
+  // ===== Utilidades =====
+  function rnd(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function barajar(arr) {
+    const c = arr.slice();
+    for (let i = c.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [c[i], c[j]] = [c[j], c[i]]; }
+    return c;
+  }
+  function precio(m) { return Math.max(1, Math.round((m - 58) * 1.8)); } // en millones
+  function fuerzaEquipo(pl) {
+    const top = pl.map(p => p.m).sort((a, b) => b - a).slice(0, 11);
+    return Math.round(top.reduce((a, b) => a + b, 0) / Math.min(11, top.length));
+  }
+  function generarPlantilla(fuerza) {
+    const slots = ["POR","POR","DEF","DEF","DEF","DEF","DEF","MED","MED","MED","MED","MED","DEL","DEL","DEL","DEL"];
+    const nombres = barajar(NOMBRES).slice(0, slots.length);
+    return slots.map((pos, i) => ({ n: nombres[i], pos: pos, m: Math.max(60, Math.min(94, fuerza + rnd(-5, 4))) }));
+  }
+  function generarMercado() {
+    // Un puñado de estrellas reales al azar cada temporada
+    return barajar(MERCADO_REAL).slice(0, 13).map(p => ({ n: p.n, pos: p.pos, m: p.m, precio: precio(p.m) }));
+  }
+  // Genera un calendario de liga (todos contra todos una vez) con el método del círculo
+  function generarCalendario(n) {
+    let resto = []; for (let i = 1; i < n; i++) resto.push(i);
+    const jornadas = [];
+    for (let r = 0; r < n - 1; r++) {
+      const fila = [0].concat(resto);
+      const ronda = [];
+      for (let k = 0; k < n / 2; k++) {
+        const a = fila[k], b = fila[n - 1 - k];
+        ronda.push(r % 2 === 0 ? [a, b] : [b, a]); // alternamos localía
+      }
+      jornadas.push(ronda);
+      resto = [resto[resto.length - 1]].concat(resto.slice(0, resto.length - 1)); // rotar
+    }
+    return jornadas;
+  }
+  // Simula un partido: devuelve [golesLocal, golesVisitante]
+  function simularPartido(fLocal, fVisit) {
+    fLocal += 3; // ventaja de jugar en casa
+    let gl = 0, gv = 0;
+    for (let i = 0; i < 5; i++) {
+      if (Math.random() * 100 < fLocal - 45) gl++;
+      if (Math.random() * 100 < fVisit - 48) gv++;
+    }
+    return [gl, gv];
+  }
+
+  // ===== Estado de la carrera =====
+  let carrera = null;
+  let vista = "inicio";
+  const app = document.getElementById("app");
+
+  function guardar() { try { localStorage.setItem("carreraManager", JSON.stringify(carrera)); } catch (e) {} }
+  function cargar() { try { const g = localStorage.getItem("carreraManager"); if (g) return JSON.parse(g); } catch (e) {} return null; }
+  function borrar() {
+    if (!confirm("¿Seguro que quieres empezar una carrera nueva? Se borrará la actual.")) return;
+    carrera = null; try { localStorage.removeItem("carreraManager"); } catch (e) {}
+    vista = "inicio"; render();
+  }
+
+  function toast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.style.display = "block";
+    clearTimeout(t._t); t._t = setTimeout(() => { t.style.display = "none"; }, 2500);
+  }
+
+  function elegirClub(i) {
+    // Cada club usa su plantilla real; su fuerza es la media de sus 11 mejores
+    const clubes = CLUBES.map(c => ({ nombre: c.nombre, escudo: c.escudo, fuerza: fuerzaEquipo(PLANTILLAS[c.nombre]) }));
+    const plantilla = PLANTILLAS[CLUBES[i].nombre].map(p => ({ n: p.n, pos: p.pos, m: p.m }));
+    carrera = {
+      temporada: 1,
+      miClub: i,
+      clubes: clubes,
+      plantilla: plantilla,
+      dinero: 80,
+      jornadaActual: 0,
+      calendario: generarCalendario(clubes.length),
+      tabla: clubes.map((c, k) => ({ eq: k, pj: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0, pts: 0 })),
+      objetivo: { posicion: 5 },
+      mercado: generarMercado(),
+      ultimaJornada: null,
+      temporadaTerminada: false,
+    };
+    guardar(); vista = "despacho"; render();
+  }
+
+  function recomputarFuerza() {
+    carrera.clubes[carrera.miClub].fuerza = fuerzaEquipo(carrera.plantilla);
+  }
+  function tablaOrdenada() {
+    return carrera.tabla.slice().sort((a, b) =>
+      b.pts - a.pts || (b.gf - b.gc) - (a.gf - a.gc) || b.gf - a.gf);
+  }
+  function posicionMiClub() {
+    return tablaOrdenada().findIndex(r => r.eq === carrera.miClub) + 1;
+  }
+  function actualizarTabla(l, v, gl, gv) {
+    const rl = carrera.tabla.find(r => r.eq === l), rv = carrera.tabla.find(r => r.eq === v);
+    rl.pj++; rv.pj++; rl.gf += gl; rl.gc += gv; rv.gf += gv; rv.gc += gl;
+    if (gl > gv) { rl.g++; rl.pts += 3; rv.p++; }
+    else if (gl < gv) { rv.g++; rv.pts += 3; rl.p++; }
+    else { rl.e++; rv.e++; rl.pts++; rv.pts++; }
+  }
+
+  function jugarJornada() {
+    const ronda = carrera.calendario[carrera.jornadaActual];
+    const resultados = [];
+    ronda.forEach(par => {
+      const l = par[0], v = par[1];
+      const res = simularPartido(carrera.clubes[l].fuerza, carrera.clubes[v].fuerza);
+      actualizarTabla(l, v, res[0], res[1]);
+      resultados.push({ l: l, v: v, gl: res[0], gv: res[1] });
+    });
+    carrera.ultimaJornada = resultados;
+    // Dinero por tu partido
+    const mio = resultados.find(r => r.l === carrera.miClub || r.v === carrera.miClub);
+    const soyLocal = mio.l === carrera.miClub;
+    const misG = soyLocal ? mio.gl : mio.gv, rivG = soyLocal ? mio.gv : mio.gl;
+    carrera.dinero += 1; // taquilla
+    if (misG > rivG) carrera.dinero += 3;
+    else if (misG === rivG) carrera.dinero += 1;
+
+    carrera.jornadaActual++;
+    if (carrera.jornadaActual >= carrera.calendario.length) carrera.temporadaTerminada = true;
+    guardar(); vista = "resultados"; render();
+  }
+
+  function nuevaTemporada() {
+    const pos = posicionMiClub();
+    const premios = [60, 45, 35, 28, 22, 18, 14, 10, 7, 5];
+    carrera.dinero += premios[pos - 1] || 5;
+    carrera.temporada++;
+    // Los jugadores cambian un poco (edad y forma)
+    carrera.plantilla.forEach(p => { p.m = Math.max(58, Math.min(95, p.m + rnd(-2, 2))); });
+    recomputarFuerza();
+    carrera.tabla = carrera.clubes.map((c, k) => ({ eq: k, pj: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0, pts: 0 }));
+    carrera.calendario = generarCalendario(carrera.clubes.length);
+    carrera.jornadaActual = 0;
+    carrera.mercado = generarMercado();
+    carrera.temporadaTerminada = false;
+    carrera.ultimaJornada = null;
+    guardar(); vista = "despacho"; render();
+  }
+
+  function comprar(idx) {
+    const j = carrera.mercado[idx];
+    if (!j) return;
+    if (carrera.dinero < j.precio) { toast("No tienes suficiente dinero 💸"); return; }
+    if (carrera.plantilla.length >= 22) { toast("Plantilla llena (máx 22). Vende a alguien."); return; }
+    carrera.dinero -= j.precio;
+    carrera.plantilla.push({ n: j.n, pos: j.pos, m: j.m });
+    carrera.mercado.splice(idx, 1);
+    recomputarFuerza(); guardar(); toast("¡Fichado! " + j.n + " ⚽"); render();
+  }
+  function vender(idx) {
+    if (carrera.plantilla.length <= 11) { toast("No puedes vender: mínimo 11 jugadores."); return; }
+    const p = carrera.plantilla[idx];
+    const v = Math.max(1, Math.round(precio(p.m) * 0.7));
+    carrera.dinero += v;
+    carrera.plantilla.splice(idx, 1);
+    recomputarFuerza(); guardar(); toast("Vendido " + p.n + " por " + v + "M 💰"); render();
+  }
+
+  function setVista(v) { vista = v; render(); }
+
+  // ===== Render =====
+  function nombreClub(i) { return carrera.clubes[i].escudo + " " + carrera.clubes[i].nombre; }
+
+  function cabecera() {
+    const c = carrera.clubes[carrera.miClub];
+    const total = carrera.calendario.length;
+    return `<div class="cabecera">
+      <div class="cab-club">${c.escudo} ${c.nombre} <span class="fuerza-pill">${c.fuerza}</span></div>
+      <div class="cab-datos">💰 ${carrera.dinero} M€ · 📅 Jornada ${Math.min(carrera.jornadaActual + 1, total)}/${total} · 🏆 ${posicionMiClub()}º · 🗓️ Temporada ${carrera.temporada}</div>
+    </div>`;
+  }
+
+  function render() {
+    if (!carrera) { renderInicio(); return; }
+    if (vista === "resultados") return renderResultados();
+    if (vista === "clasificacion") return renderClasificacion();
+    if (vista === "plantilla") return renderPlantilla();
+    if (vista === "fichajes") return renderFichajes();
+    return renderDespacho();
+  }
+
+  function renderInicio() {
+    app.innerHTML = `<div class="caja">
+      <div class="titulo-caja">Elige tu club</div>
+      <div class="clubes-grid">${CLUBES.map((c, i) => `
+        <div class="club-op" onclick="elegirClub(${i})">
+          <div class="club-escudo">${c.escudo}</div>
+          <div class="club-nom">${c.nombre}</div>
+          <div class="club-fuerza"><span class="fuerza-pill">${fuerzaEquipo(PLANTILLAS[c.nombre])}</span></div>
+        </div>`).join("")}</div>
+    </div>`;
+  }
+
+  function renderDespacho() {
+    let html = cabecera();
+    if (carrera.temporadaTerminada) {
+      html += renderFinTemporada();
+    } else {
+      const par = carrera.calendario[carrera.jornadaActual];
+      const mio = par.find(p => p[0] === carrera.miClub || p[1] === carrera.miClub);
+      const local = mio[0], visit = mio[1];
+      html += `<div class="caja">
+        <div class="titulo-caja">📅 Próximo partido</div>
+        <div style="font-size:19px;font-weight:bold;">${nombreClub(local)} <span style="opacity:.7">vs</span> ${nombreClub(visit)}</div>
+        <div style="font-size:13px;opacity:.85;margin-top:4px;">${local === carrera.miClub ? "Juegas en casa 🏟️" : "Juegas fuera ✈️"}</div>
+      </div>
+      <div class="caja">🎯 <b>Objetivo:</b> terminar entre los <b>${carrera.objetivo.posicion} primeros</b> (vas ${posicionMiClub()}º)</div>
+      <button class="btn-grande" onclick="jugarJornada()">▶️ Jugar la jornada</button>`;
+    }
+    html += `<div class="nav">
+      <button class="btn-nav" onclick="setVista('plantilla')">📋 Plantilla</button>
+      <button class="btn-nav" onclick="setVista('clasificacion')">📊 Clasificación</button>
+      <button class="btn-nav" onclick="setVista('fichajes')">💰 Fichajes</button>
+    </div>
+    <button class="btn-volver" onclick="borrar()" style="background:#c0392b;color:#fff;margin-top:14px;">🗑️ Carrera nueva</button>`;
+    app.innerHTML = html;
+  }
+
+  function renderFinTemporada() {
+    const pos = posicionMiClub();
+    const cumplido = pos <= carrera.objetivo.posicion;
+    const campeon = pos === 1;
+    return `<div class="caja">
+      <div class="fin-emoji">${campeon ? "🏆" : cumplido ? "🎉" : "😅"}</div>
+      <div class="fin-titulo">${campeon ? "¡CAMPEONES!" : cumplido ? "¡Objetivo cumplido!" : "Temporada terminada"}</div>
+      <div>Has quedado <b>${pos}º</b> de ${carrera.clubes.length}.</div>
+      <div style="margin-top:6px;font-size:14px;opacity:.9;">${cumplido ? "La directiva está contenta 😃" : "La directiva esperaba más, ¡pero seguimos! 💪"}</div>
+      <button class="btn-grande" style="margin-top:14px;" onclick="nuevaTemporada()">➡️ Empezar nueva temporada</button>
+    </div>`;
+  }
+
+  function renderResultados() {
+    const res = carrera.ultimaJornada;
+    const mio = res.find(r => r.l === carrera.miClub || r.v === carrera.miClub);
+    const soyLocal = mio.l === carrera.miClub;
+    const misG = soyLocal ? mio.gl : mio.gv, rivG = soyLocal ? mio.gv : mio.gl;
+    const txt = misG > rivG ? "🎉 ¡VICTORIA!" : misG < rivG ? "😢 Derrota" : "🤝 Empate";
+    let html = cabecera();
+    html += `<div class="caja">
+      <div class="titulo-caja">${txt}</div>
+      <div class="mi-resultado">${nombreClub(mio.l)} ${mio.gl} - ${mio.gv} ${nombreClub(mio.v)}</div>
+    </div>
+    <div class="caja">
+      <div class="titulo-caja">Resultados de la jornada</div>
+      ${res.map(r => `<div class="res-linea ${(r.l === carrera.miClub || r.v === carrera.miClub) ? "tuyo" : ""}">
+        <span>${nombreClub(r.l)}</span><b>${r.gl} - ${r.gv}</b><span>${nombreClub(r.v)}</span>
+      </div>`).join("")}
+    </div>
+    <button class="btn-grande" onclick="setVista('despacho')">${carrera.temporadaTerminada ? "🏁 Ver fin de temporada" : "Continuar ➡️"}</button>`;
+    app.innerHTML = html;
+  }
+
+  function renderClasificacion() {
+    const t = tablaOrdenada();
+    let html = cabecera();
+    html += `<div class="caja">
+      <div class="titulo-caja">📊 Clasificación</div>
+      <table><thead><tr><th>#</th><th class="col-nom">Equipo</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>DG</th><th>Pts</th></tr></thead>
+      <tbody>${t.map((r, i) => `<tr class="${r.eq === carrera.miClub ? "tuyo" : ""}">
+        <td>${i + 1}</td><td class="col-nom">${carrera.clubes[r.eq].escudo} ${carrera.clubes[r.eq].nombre}</td>
+        <td>${r.pj}</td><td>${r.g}</td><td>${r.e}</td><td>${r.p}</td><td>${(r.gf - r.gc >= 0 ? "+" : "") + (r.gf - r.gc)}</td><td><b>${r.pts}</b></td>
+      </tr>`).join("")}</tbody></table>
+    </div>
+    <button class="btn-volver" onclick="setVista('despacho')">⬅️ Volver</button>`;
+    app.innerHTML = html;
+  }
+
+  function renderPlantilla() {
+    const orden = { POR: 0, DEF: 1, MED: 2, DEL: 3 };
+    const pl = carrera.plantilla.map((p, i) => ({ p: p, i: i })).sort((a, b) => orden[a.p.pos] - orden[b.p.pos] || b.p.m - a.p.m);
+    let html = cabecera();
+    html += `<div class="caja">
+      <div class="titulo-caja">📋 Tu plantilla (${carrera.plantilla.length}) · Fuerza ${carrera.clubes[carrera.miClub].fuerza}</div>
+      ${pl.map(o => `<div class="jug">
+        <span class="jug-pos">${POS_EMOJI[o.p.pos]} ${o.p.pos}</span>
+        <span class="jug-nom">${o.p.n}</span>
+        <span class="jug-media">${o.p.m}</span>
+        <button class="btn-vender" onclick="vender(${o.i})">Vender ${Math.max(1, Math.round(precio(o.p.m) * 0.7))}M</button>
+      </div>`).join("")}
+    </div>
+    <button class="btn-volver" onclick="setVista('despacho')">⬅️ Volver</button>`;
+    app.innerHTML = html;
+  }
+
+  function renderFichajes() {
+    let html = cabecera();
+    html += `<div class="caja">
+      <div class="titulo-caja">💰 Mercado de fichajes · Tienes ${carrera.dinero} M€</div>
+      ${carrera.mercado.length ? carrera.mercado.map((j, i) => `<div class="jug">
+        <span class="jug-pos">${POS_EMOJI[j.pos]} ${j.pos}</span>
+        <span class="jug-nom">${j.n}</span>
+        <span class="jug-media">${j.m}</span>
+        <button class="btn-comprar" onclick="comprar(${i})" ${carrera.dinero < j.precio ? "disabled" : ""}>${j.precio}M</button>
+      </div>`).join("") : "<div>No quedan jugadores. ¡Vuelve la próxima temporada!</div>"}
+    </div>
+    <button class="btn-volver" onclick="setVista('despacho')">⬅️ Volver</button>`;
+    app.innerHTML = html;
+  }
+
+  // ===== Arranque =====
+  carrera = cargar();
+  vista = carrera ? "despacho" : "inicio";
+  render();
+</script>

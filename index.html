@@ -1,0 +1,53 @@
+<meta charset="utf-8">
+<title>Los juegos de Marco</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Trebuchet MS", Verdana, sans-serif;
+    background: linear-gradient(160deg, #1a1030 0%, #0b0818 100%);
+    color: #fff; min-height: 100vh; padding: 24px 16px; text-align: center;
+  }
+  h1 { font-size: 34px; color: #ffd76a; text-shadow: 2px 2px 0 #000; margin-bottom: 4px; }
+  .subt { opacity: .85; font-size: 15px; margin-bottom: 26px; }
+  .juegos { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; max-width: 760px; margin: 0 auto; }
+  a.juego {
+    display: block; width: 230px; text-decoration: none; color: #fff;
+    background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.18);
+    border-radius: 18px; padding: 20px 16px; transition: transform .12s, border-color .12s;
+  }
+  a.juego:hover { transform: translateY(-6px); border-color: #ffd76a; }
+  .emoji { font-size: 56px; }
+  .nombre { font-size: 20px; font-weight: bold; color: #ffd76a; margin: 8px 0 4px; }
+  .desc { font-size: 13px; opacity: .9; line-height: 1.4; }
+  .jugar { display: inline-block; margin-top: 12px; background: #7b3ff2; color: #fff; font-weight: bold; border-radius: 20px; padding: 8px 20px; }
+  a.juego[data-c="dream"] .jugar { background: #128a33; }
+  a.juego[data-c="manager"] .jugar { background: #0b6623; }
+  footer { margin-top: 30px; font-size: 12px; opacity: .6; }
+</style>
+
+<h1>🎮 Los juegos de Marco</h1>
+<div class="subt">Hechos por Marco. ¡Elige uno y a jugar!</div>
+
+<div class="juegos">
+  <a class="juego" data-c="dream" href="dream.html">
+    <div class="emoji">⚽</div>
+    <div class="nombre">Dream</div>
+    <div class="desc">Crea tu 11 de ensueño con cromos, sobres, misiones y colección.</div>
+    <span class="jugar">▶️ Jugar</span>
+  </a>
+  <a class="juego" data-c="manager" href="manager.html">
+    <div class="emoji">🏆</div>
+    <div class="nombre">Modo Carrera</div>
+    <div class="desc">Dirige un club de fútbol: partidos, liga, fichajes y temporadas.</div>
+    <span class="jugar">▶️ Jugar</span>
+  </a>
+  <a class="juego" data-c="rpg" href="mazmorra.html">
+    <div class="emoji">🗡️</div>
+    <div class="nombre">La Mazmorra</div>
+    <div class="desc">RPG por turnos: elige entre 11 clases, sube de nivel y vence a los jefes.</div>
+    <span class="jugar">▶️ Jugar</span>
+  </a>
+</div>
+
+<footer>Creado con ayuda de Claude · pmerino</footer>

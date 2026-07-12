@@ -1,0 +1,612 @@
+<meta charset="utf-8">
+<title>La Mazmorra - RPG por turnos</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Trebuchet MS", Verdana, sans-serif;
+    background: linear-gradient(160deg, #1a1030 0%, #0b0818 100%);
+    color: #eee; min-height: 100vh; padding: 14px; text-align: center;
+  }
+  h1 { font-size: 26px; color: #ffd76a; text-shadow: 2px 2px 0 #000; margin-bottom: 2px; }
+  .subt { opacity: .8; font-size: 13px; margin-bottom: 12px; }
+  #app { max-width: 460px; margin: 0 auto; }
+
+  .caja {
+    background: rgba(255,255,255,.06); border: 2px solid rgba(255,255,255,.15);
+    border-radius: 14px; padding: 14px; margin-bottom: 12px;
+  }
+  .titulo-caja { font-weight: bold; font-size: 16px; margin-bottom: 8px; color: #ffd76a; }
+
+  button {
+    font-family: inherit; font-weight: bold; cursor: pointer; color: #fff;
+    border: none; border-radius: 14px; transition: transform .08s;
+  }
+  button:active { transform: translateY(2px); }
+  button:disabled { opacity: .45; cursor: default; }
+  .btn-grande { font-size: 19px; background: #7b3ff2; padding: 14px; width: 100%; margin-bottom: 10px; box-shadow: 0 4px 0 #4a1e9e; }
+  .btn-accion { font-size: 15px; padding: 12px 8px; }
+  .acciones { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .a-atacar { background: #c0392b; box-shadow: 0 4px 0 #7d2318; }
+  .a-defender { background: #2980b9; box-shadow: 0 4px 0 #1a5478; }
+  .a-magia { background: #8e44ad; box-shadow: 0 4px 0 #5c2d70; }
+  .a-pocion { background: #27ae60; box-shadow: 0 4px 0 #1a7442; }
+  .a-huir { background: #555; box-shadow: 0 4px 0 #333; grid-column: 1 / 3; }
+  .btn-sec { background: rgba(255,255,255,.15); border: 2px solid rgba(255,255,255,.4); padding: 9px 16px; font-size: 14px; }
+  .btn-tienda { background: #d4a017; box-shadow: 0 4px 0 #9a7410; }
+
+  /* Barras de vida/maná */
+  .barra { background: rgba(0,0,0,.5); border-radius: 10px; height: 16px; overflow: hidden; margin: 3px 0; }
+  .barra-relleno { height: 100%; transition: width .3s; }
+  .vida-alta { background: #2ecc71; } .vida-media { background: #f1c40f; } .vida-baja { background: #e74c3c; }
+  .mana { background: #3498db; }
+  .etiqueta-barra { font-size: 12px; display: flex; justify-content: space-between; }
+
+  .enemigo-emoji { font-size: 76px; }
+  @keyframes sacudir { 0%,100%{transform:translateX(0);} 20%{transform:translateX(-9px) rotate(-4deg);} 40%{transform:translateX(9px) rotate(4deg);} 60%{transform:translateX(-7px);} 80%{transform:translateX(7px);} }
+  .sacudir { animation: sacudir .4s; }
+  @keyframes flashRojo { 0%,100%{filter:none;} 50%{filter:brightness(2) sepia(1) hue-rotate(-40deg);} }
+  .golpeado { animation: flashRojo .3s; }
+  .enemigo-nom { font-size: 20px; font-weight: bold; }
+  .jefe-badge { display: inline-block; background: #c0392b; color: #fff; border-radius: 10px; padding: 1px 10px; font-size: 12px; }
+  .elite-badge { background: #b8860b; }
+  .caja-enemigo { position: relative; }
+  .dano-flotante {
+    position: absolute; left: 50%; top: 26px; transform: translateX(-50%);
+    font-size: 30px; font-weight: 900; color: #ff6161; text-shadow: 0 2px 4px #000;
+    pointer-events: none; animation: flotar .8s ease-out forwards;
+  }
+  @keyframes flotar {
+    0% { opacity: 0; transform: translate(-50%, 10px) scale(.6); }
+    30% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -42px) scale(1.3); }
+  }
+
+  .log { text-align: left; font-size: 13px; background: rgba(0,0,0,.35); border-radius: 10px; padding: 8px 10px; margin-top: 10px; min-height: 60px; }
+  .log div { padding: 1px 0; opacity: .95; }
+
+  .stats { font-size: 14px; line-height: 1.7; text-align: left; }
+  .stat-linea { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,.1); padding: 2px 0; }
+  .heroe-emoji { font-size: 54px; }
+  .pill { background: #7b3ff2; border-radius: 10px; padding: 1px 9px; font-weight: bold; }
+
+  .tienda-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,.08); border-radius: 10px; padding: 9px 12px; margin-bottom: 7px; text-align: left; }
+  .recompensa-emoji { font-size: 60px; }
+</style>
+
+<h1>🗡️ La Mazmorra</h1>
+<div class="subt">Baja, lucha, sube de nivel y derrota a los jefes</div>
+<div id="app"></div>
+
+<script>
+  // ===== Datos =====
+  const ENEMIGOS = [
+    { n:"Rata gigante", e:"🐀" }, { n:"Murciélago", e:"🦇" }, { n:"Goblin", e:"👺" },
+    { n:"Lobo", e:"🐺" }, { n:"Araña", e:"🕷️" }, { n:"Slime", e:"🟢" },
+    { n:"Esqueleto", e:"💀" }, { n:"Zombi", e:"🧟" }, { n:"Orco", e:"👹" }, { n:"Fantasma", e:"👻" },
+  ];
+  const JEFES = [
+    { n:"Ogro Gigante", e:"👹" }, { n:"Dragón", e:"🐉" }, { n:"Rey Esqueleto", e:"☠️" }, { n:"Señor Oscuro", e:"😈" },
+  ];
+  // Las 5 clases: cada una empieza con distintas stats y un objeto con su ventaja
+  const CLASES = [
+    { id:"mago", nombre:"Mago", emoji:"🧙", item:"🪄 Bastón Élico",
+      desc:"Al golpear puede quemar 🔥 o congelar 🧊 al enemigo. Su magia es más barata y potente.",
+      atacarLabel:"🪄 Bastón", especialLabel:"🔥 Bola de Fuego",
+      stats:{ vidaMax:32, ataque:7, defensa:3, magia:12, manaMax:16 } },
+    { id:"guerrero", nombre:"Guerrero", emoji:"⚔️", item:"🗡️ Espadón",
+      desc:"Mucha vida y ataque. Hace más golpes críticos y +2 de daño en cada golpe.",
+      atacarLabel:"🗡️ Espadazo", especialLabel:"💥 Furia Arcana",
+      stats:{ vidaMax:50, ataque:12, defensa:5, magia:4, manaMax:8 } },
+    { id:"cazador", nombre:"Cazador", emoji:"🏹", item:"🏹 Arco Certero",
+      desc:"Sus flechas atraviesan la armadura (ignoran la defensa) y hacen crítico a menudo.",
+      atacarLabel:"🏹 Flechazo", especialLabel:"🎯 Disparo Mágico",
+      stats:{ vidaMax:38, ataque:10, defensa:4, magia:6, manaMax:10 } },
+    { id:"paladin", nombre:"Paladín", emoji:"🛡️", item:"🛡️ Escudo Sagrado",
+      desc:"Un tanque: mucha defensa, recibe menos daño y se cura un poco cada turno.",
+      atacarLabel:"🔨 Mazazo", especialLabel:"✨ Luz Sagrada",
+      stats:{ vidaMax:55, ataque:8, defensa:8, magia:5, manaMax:10 } },
+    { id:"picaro", nombre:"Pícaro", emoji:"🗡️", item:"☠️ Dagas Envenenadas",
+      desc:"Envenena al golpear ☠️, esquiva ataques 💨 y roba oro extra a los enemigos.",
+      atacarLabel:"🗡️ Puñalada", especialLabel:"☠️ Golpe Oscuro",
+      stats:{ vidaMax:36, ataque:11, defensa:3, magia:5, manaMax:10 } },
+    { id:"vampiro", nombre:"Vampiro", emoji:"🧛", item:"🪓 Guadaña Sedienta",
+      desc:"Con su guadaña ROBA VIDA en cada golpe (30%). Su mordisco drena aún más.",
+      atacarLabel:"🪓 Guadañazo", especialLabel:"🧛 Mordisco",
+      stats:{ vidaMax:42, ataque:11, defensa:4, magia:7, manaMax:12 } },
+    { id:"hielo", nombre:"Hechicero de Hielo", emoji:"❄️", item:"❄️ Cetro Glacial",
+      desc:"Congela a menudo al golpear (60%) y su Ventisca deja al enemigo helado 2 turnos.",
+      atacarLabel:"❄️ Cetrazo", especialLabel:"❄️ Ventisca",
+      stats:{ vidaMax:34, ataque:7, defensa:3, magia:11, manaMax:15 } },
+    { id:"nigromante", nombre:"Nigromante", emoji:"💀", item:"💀 Báculo Maldito",
+      desc:"Envenena mucho al golpear (60%) y su Plaga deja veneno muy largo.",
+      atacarLabel:"💀 Bastonazo", especialLabel:"☠️ Plaga",
+      stats:{ vidaMax:36, ataque:8, defensa:4, magia:10, manaMax:13 } },
+    { id:"ninja", nombre:"Ninja", emoji:"🥷", item:"🗡️ Katana",
+      desc:"Muchos críticos y 30% de golpear DOS veces. Su Golpe Sombra es letal.",
+      atacarLabel:"🗡️ Corte", especialLabel:"🥷 Golpe Sombra",
+      stats:{ vidaMax:34, ataque:12, defensa:3, magia:6, manaMax:10 } },
+    { id:"barbaro", nombre:"Bárbaro", emoji:"🪓", item:"🪓 Hacha de Guerra",
+      desc:"Cuanta menos vida le queda, MÁS daño hace (furia). Su Torbellino arrasa.",
+      atacarLabel:"🪓 Hachazo", especialLabel:"🌀 Torbellino",
+      stats:{ vidaMax:52, ataque:13, defensa:4, magia:3, manaMax:8 } },
+    { id:"chaman", nombre:"Chamán", emoji:"⚡", item:"⚡ Tótem del Rayo",
+      desc:"Sus golpes pueden aturdir con un rayo (35%). Su Rayo hace mucho daño.",
+      atacarLabel:"⚡ Tótem", especialLabel:"⚡ Rayo",
+      stats:{ vidaMax:40, ataque:9, defensa:5, magia:9, manaMax:12 } },
+  ];
+
+  // Eventos aleatorios entre combates
+  const EVENTOS = [
+    { e:"⛲", t:"Fuente mágica", d:"Bebes agua cristalina y recuperas fuerzas.", ef:(h) => { h.vida = h.vidaMax; h.mana = h.manaMax; return "❤️ Vida y ✨ maná al máximo."; } },
+    { e:"💰", t:"Cofre del tesoro", d:"Encuentras un cofre repleto de oro.", ef:(h) => { const o = 25 + Math.floor(Math.random() * 30); h.oro += o; return "💰 +" + o + " de oro."; } },
+    { e:"🎁", t:"Cofre misterioso", d:"Lo abres con cuidado...", ef:(h) => { if (Math.random() < 0.5) { h.pociones++; return "🧪 ¡Una poción!"; } const o = 15 + Math.floor(Math.random() * 25); h.oro += o; return "💰 +" + o + " de oro."; } },
+    { e:"⚠️", t:"¡Trampa oculta!", d:"Pisas una losa suelta y saltan cuchillas.", ef:(h) => { const d = Math.max(1, Math.round(h.vidaMax * 0.15)); h.vida = Math.max(1, h.vida - d); return "💥 -" + d + " de vida."; } },
+    { e:"🧙", t:"Mercader errante", d:"Un anciano encapuchado te sonríe.", ef:(h) => { h.pociones++; return "🧪 Te regala una poción."; } },
+    { e:"🐣", t:"Nido secreto", d:"Descubres un huevo brillante lleno de monedas.", ef:(h) => { h.oro += 20; return "💰 +20 de oro."; } },
+  ];
+  // Reliquias: mejoras permanentes que eliges tras vencer a un jefe
+  const RELIQUIAS = [
+    { e:"💪", n:"Amuleto de Fuerza", d:"+3 de ataque para siempre", ap:(h) => { h.ataque += 3; } },
+    { e:"🛡️", n:"Escudo de Piedra", d:"+3 de defensa para siempre", ap:(h) => { h.defensa += 3; } },
+    { e:"❤️", n:"Corazón de León", d:"+18 de vida máxima", ap:(h) => { h.vidaMax += 18; h.vida += 18; } },
+    { e:"🔮", n:"Orbe Arcano", d:"+3 de magia y +4 de maná", ap:(h) => { h.magia += 3; h.manaMax += 4; } },
+    { e:"🩸", n:"Colmillo Vampírico", d:"Robas vida al golpear", ap:(h) => { h.robavidas = true; } },
+    { e:"🍀", n:"Trébol Dorado", d:"+2 ataque y +2 defensa", ap:(h) => { h.ataque += 2; h.defensa += 2; } },
+  ];
+
+  // ===== Utilidades =====
+  function rnd(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+  function xpNext(nivel) { return nivel * 40; }
+  function elige(arr) { return arr[rnd(0, arr.length - 1)]; }
+  function barajar(arr) {
+    const c = arr.slice();
+    for (let i = c.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [c[i], c[j]] = [c[j], c[i]]; }
+    return c;
+  }
+
+  // Sonidos (se generan solos, sin archivos)
+  let audioCtx = null;
+  function tono(freq, dur, tipo, cuando, vol) {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = audioCtx.currentTime + (cuando || 0);
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = tipo || "sine"; o.frequency.value = freq;
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.linearRampToValueAtTime(vol || 0.2, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(audioCtx.destination); o.start(t0); o.stop(t0 + dur);
+    } catch (e) {}
+  }
+  function sGolpe() { tono(170, 0.12, "square", 0, 0.25); }
+  function sMagia() { tono(520, 0.16, "sawtooth", 0, 0.2); tono(780, 0.16, "sawtooth", 0.06, 0.2); }
+  function sDano() { tono(110, 0.15, "triangle", 0, 0.28); }
+  function sNivel() { [523, 659, 784, 1047].forEach((f, i) => tono(f, 0.22, "triangle", i * 0.1, 0.22)); }
+  function sMoneda() { tono(880, 0.08, "square", 0, 0.2); tono(1320, 0.12, "square", 0.07, 0.2); }
+
+  // ===== Estado =====
+  let juego = null;
+  const app = document.getElementById("app");
+  function guardar() { try { localStorage.setItem("rpgMazmorra", JSON.stringify(juego)); } catch (e) {} }
+  function cargar() { try { const g = localStorage.getItem("rpgMazmorra"); if (g) return JSON.parse(g); } catch (e) {} return null; }
+
+  function nuevoJuego(claseId) {
+    const c = CLASES.find(x => x.id === claseId) || CLASES[0];
+    juego = {
+      clase: c.id,
+      heroe: { nivel:1, xp:0, vidaMax:c.stats.vidaMax, vida:c.stats.vidaMax, ataque:c.stats.ataque, defensa:c.stats.defensa,
+               magia:c.stats.magia, manaMax:c.stats.manaMax, mana:c.stats.manaMax, oro:20, pociones:2, arma:0, armadura:0, piso:1,
+               reliquias: [], robavidas: false },
+      enemigo: null, log: [], defendiendo: false, vista: "pueblo", recompensa: null, racha: 0,
+    };
+    if (c.id === "vampiro") juego.heroe.robavidas = true; // el vampiro roba vida desde el inicio
+    guardar(); render();
+  }
+  function claseActual() { return CLASES.find(x => x.id === juego.clase) || CLASES[0]; }
+  function cargarRecord() { try { return parseInt(localStorage.getItem("rpgRecord") || "0", 10) || 0; } catch (e) { return 0; } }
+  function guardarRecord(n) { try { localStorage.setItem("rpgRecord", String(n)); } catch (e) {} }
+  function borrar() {
+    if (!confirm("¿Empezar una aventura nueva? Se borrará la actual.")) return;
+    juego = null; try { localStorage.removeItem("rpgMazmorra"); } catch (e) {}
+    render();
+  }
+
+  function atkTotal() { return juego.heroe.ataque + juego.heroe.arma * 2; }
+  function defTotal() { return juego.heroe.defensa + juego.heroe.armadura * 2; }
+  function log(msg) { juego.log.unshift(msg); if (juego.log.length > 6) juego.log.pop(); }
+
+  function generarEnemigo(piso) {
+    const jefe = piso % 5 === 0;
+    const f = 1 + (piso - 1) * 0.17;
+    const base = jefe ? JEFES[Math.min(Math.floor(piso / 5) - 1, JEFES.length - 1)] : elige(ENEMIGOS);
+    const elite = !jefe && Math.random() < 0.12; // 12% de los enemigos normales son élite
+    const vm = Math.round((jefe ? 55 : 20) * f * (elite ? 1.5 : 1));
+    const recomp = elite ? 1.6 : 1;
+    return {
+      n: (elite ? "Élite " : "") + base.n, e: base.e, jefe: jefe, elite: elite, vidaMax: vm, vida: vm,
+      ataque: Math.round((jefe ? 11 : 6) * f * (elite ? 1.3 : 1)), defensa: Math.round((jefe ? 5 : 2) * f),
+      xp: Math.round((jefe ? 55 : 18) * f * recomp), oro: Math.round((jefe ? 45 : 10) * f * recomp),
+      estados: { quemado: 0, congelado: 0, veneno: 0 },
+    };
+  }
+
+  function entrarMazmorra() {
+    if (juego.heroe.piso > cargarRecord()) guardarRecord(juego.heroe.piso); // récord de profundidad
+    juego.enemigo = generarEnemigo(juego.heroe.piso);
+    juego.defendiendo = false;
+    juego.log = ["Bajas al piso " + juego.heroe.piso + "... aparece " + juego.enemigo.e + " " + juego.enemigo.n + "."];
+    juego.vista = "combate"; guardar(); render();
+  }
+  // Al bajar: a veces sale un evento sorpresa en vez de un combate
+  function bajar() {
+    if (Math.random() < 0.30) {
+      const ev = elige(EVENTOS);
+      juego.evento = { e: ev.e, t: ev.t, d: ev.d, r: ev.ef(juego.heroe) };
+      juego.vista = "evento"; guardar(); render();
+    } else {
+      entrarMazmorra();
+    }
+  }
+
+  // ---- Acciones del jugador ----
+  function atacar() {
+    const h = juego.heroe, en = juego.enemigo;
+    let critProb = 0.15, critMult = 1.6, def = en.defensa;
+    if (juego.clase === "guerrero") { critProb = 0.25; critMult = 1.8; }
+    if (juego.clase === "cazador") { critProb = 0.20; def = 0; } // el arco ignora la defensa
+    if (juego.clase === "ninja") { critProb = 0.35; critMult = 1.8; }
+    let dmg = Math.max(1, atkTotal() + rnd(0, 4) - def);
+    if (juego.clase === "guerrero") dmg += 2;
+    if (juego.clase === "barbaro") { const falta = 1 - h.vida / h.vidaMax; dmg = Math.round(dmg * (1 + falta * 0.9)); } // furia
+    const crit = Math.random() < critProb;
+    if (crit) dmg = Math.round(dmg * critMult);
+    en.vida -= dmg;
+    let total = dmg;
+    log("⚔️ Golpeas por " + dmg + (crit ? " ¡CRÍTICO!" : "") + (juego.clase === "cazador" ? " (traspasa armadura)" : "") + ".");
+    // Poderes del objeto de clase al golpear
+    if (juego.clase === "mago" && Math.random() < 0.40) { if (Math.random() < 0.5) { en.estados.quemado = 3; log("🔥 ¡El bastón quema!"); } else { en.estados.congelado = 1; log("🧊 ¡El bastón congela!"); } }
+    if (juego.clase === "picaro" && Math.random() < 0.50) { en.estados.veneno = 4; log("☠️ ¡Envenenas!"); }
+    if (juego.clase === "hielo" && Math.random() < 0.60) { en.estados.congelado = 1; log("❄️ ¡El cetro congela!"); }
+    if (juego.clase === "nigromante" && Math.random() < 0.60) { en.estados.veneno = 4; log("☠️ ¡Maldición venenosa!"); }
+    if (juego.clase === "chaman" && Math.random() < 0.35) { en.estados.congelado = 1; log("⚡ ¡El rayo aturde!"); }
+    if (juego.clase === "ninja" && Math.random() < 0.30) { const d2 = Math.max(1, Math.round(dmg * 0.6)); en.vida -= d2; total += d2; log("🥷 ¡Segundo golpe: -" + d2 + "!"); }
+    if (h.robavidas) { const ls = juego.clase === "vampiro" ? 0.30 : 0.20; const cu = Math.min(Math.round(total * ls), h.vidaMax - h.vida); if (cu > 0) { h.vida += cu; log("🩸 Robas " + cu + " de vida."); } }
+    juego._dano = total; sGolpe(); juego._hit = true;
+    finTurnoJugador();
+  }
+  function defender() { juego.defendiendo = true; log("🛡️ Te preparas para defender."); finTurnoJugador(); }
+  function magia() {
+    const h = juego.heroe, en = juego.enemigo;
+    const costo = juego.clase === "mago" ? 3 : 4;
+    if (h.mana < costo) { log("✨ No tienes suficiente maná."); render(); return; }
+    h.mana -= costo;
+    let dmg = 0;
+    if (juego.clase === "mago") {          // 🔥 Bola de Fuego: mucho daño mágico + quema
+      dmg = Math.round((h.magia * 2 + rnd(0, 4)) * 1.3); en.estados.quemado = 3;
+      log("🔥 Bola de Fuego: -" + dmg + " ¡y arde!");
+    } else if (juego.clase === "guerrero") { // 💥 Furia: golpe físico brutal
+      dmg = Math.max(1, atkTotal() * 2 + rnd(0, 6) - en.defensa);
+      log("💥 ¡Golpe Brutal por " + dmg + "!");
+    } else if (juego.clase === "cazador") {  // 🎯 Disparo que traspasa todo y hace mucho daño
+      dmg = (atkTotal() + rnd(0, 4)) * 2;
+      log("🎯 Disparo Certero: -" + dmg + " (traspasa la armadura)!");
+    } else if (juego.clase === "paladin") {  // ✨ Luz Sagrada: daño moderado y te curas
+      dmg = h.magia + rnd(0, 4);
+      const cura = Math.min(h.magia * 2, h.vidaMax - h.vida); h.vida += cura;
+      log("✨ Luz Sagrada: -" + dmg + " y +" + cura + " de vida.");
+    } else if (juego.clase === "picaro") {   // ☠️ Golpe Oscuro: daño + veneno seguro
+      dmg = Math.max(1, Math.round(atkTotal() * 1.5) + rnd(0, 4) - en.defensa); en.estados.veneno = 4;
+      log("☠️ Golpe Oscuro: -" + dmg + " ¡y envenena!");
+    } else if (juego.clase === "vampiro") {  // 🧛 Mordisco: drena mucha vida
+      dmg = Math.max(1, Math.round(atkTotal() * 1.5) + rnd(0, 4) - en.defensa);
+      const cu = Math.min(Math.round(dmg * 0.7), h.vidaMax - h.vida); h.vida += cu;
+      log("🧛 Mordisco: -" + dmg + " y robas " + cu + " de vida.");
+    } else if (juego.clase === "hielo") {    // ❄️ Ventisca: daño + congela 2 turnos
+      dmg = h.magia * 2 + rnd(0, 4); en.estados.congelado = 2;
+      log("❄️ Ventisca: -" + dmg + " ¡y lo congela!");
+    } else if (juego.clase === "nigromante") { // ☠️ Plaga: daño + veneno muy largo
+      dmg = Math.round(h.magia * 1.6) + rnd(0, 4); en.estados.veneno = 6;
+      log("☠️ Plaga: -" + dmg + " ¡veneno intenso!");
+    } else if (juego.clase === "ninja") {    // 🥷 Golpe Sombra: letal
+      dmg = (atkTotal() + rnd(0, 4)) * 2;
+      log("🥷 Golpe Sombra: -" + dmg + " ¡letal!");
+    } else if (juego.clase === "barbaro") {  // 🌀 Torbellino: golpe físico masivo
+      dmg = Math.max(1, atkTotal() * 2 + rnd(0, 6) - en.defensa);
+      log("🌀 Torbellino: -" + dmg + "!");
+    } else if (juego.clase === "chaman") {   // ⚡ Rayo: mucho daño y puede aturdir
+      dmg = Math.round(h.magia * 2.2) + rnd(0, 4);
+      if (Math.random() < 0.4) { en.estados.congelado = 1; log("⚡ Rayo: -" + dmg + " ¡y aturde!"); } else log("⚡ Rayo: -" + dmg + "!");
+    } else { dmg = h.magia * 2 + rnd(0, 4); log("✨ -" + dmg + "."); }
+    en.vida -= dmg;
+    juego._dano = dmg; sMagia(); juego._hit = true;
+    finTurnoJugador();
+  }
+  function usarPocion() {
+    if (juego.heroe.pociones <= 0) { log("🧪 No te quedan pociones."); render(); return; }
+    juego.heroe.pociones--;
+    const cura = Math.round(juego.heroe.vidaMax * 0.5);
+    juego.heroe.vida = Math.min(juego.heroe.vidaMax, juego.heroe.vida + cura);
+    log("🧪 Bebes una poción: +" + cura + " de vida.");
+    finTurnoJugador();
+  }
+  function huir() { juego.enemigo = null; juego.vista = "pueblo"; log("🏃 Huyes al pueblo."); guardar(); render(); }
+
+  function finTurnoJugador() {
+    if (juego.enemigo.vida <= 0) { victoria(); guardar(); render(); return; }
+    turnoEnemigo();
+    if (juego.vista === "muerte") { guardar(); render(); return; }
+    if (juego.enemigo.vida <= 0) { victoria(); guardar(); render(); return; } // pudo morir por quemadura/veneno
+    juego.heroe.mana = Math.min(juego.heroe.manaMax, juego.heroe.mana + 1); // regeneras algo de maná
+    guardar(); render();
+  }
+  function aplicarEstadosEnemigo() {
+    const en = juego.enemigo, h = juego.heroe;
+    if (en.estados.quemado > 0) { const d = 3 + Math.floor(h.magia / 3); en.vida -= d; en.estados.quemado--; log("🔥 " + en.n + " se quema: -" + d + "."); }
+    if (en.estados.veneno > 0) { en.vida -= 3; en.estados.veneno--; log("☠️ " + en.n + " sufre veneno: -3."); }
+  }
+  function turnoEnemigo() {
+    const en = juego.enemigo, h = juego.heroe;
+    if (en.estados.congelado > 0) {
+      en.estados.congelado--;
+      log("🧊 " + en.n + " está congelado y no puede atacar.");
+    } else if (juego.clase === "picaro" && Math.random() < 0.20) {
+      log("💨 ¡Esquivas el ataque!");
+    } else {
+      const r = Math.random();
+      if (en.vida < en.vidaMax * 0.6 && r < 0.18) {          // el enemigo se cura
+        const c = Math.round(en.vidaMax * 0.15); en.vida = Math.min(en.vidaMax, en.vida + c);
+        log("💚 " + en.n + " se cura +" + c + ".");
+      } else {
+        let dmg = Math.max(1, en.ataque + rnd(0, 3) - defTotal() * (juego.defendiendo ? 2 : 1));
+        if (juego.clase === "paladin") dmg = Math.max(1, Math.round(dmg * 0.85)); // el escudo reduce daño
+        const fuerte = r > 0.85;                              // ataque poderoso
+        if (fuerte) dmg = Math.round(dmg * 1.8);
+        h.vida -= dmg; sDano();
+        log(en.e + (fuerte ? " ¡ATAQUE PODEROSO!" : " te ataca") + ": -" + dmg + " de vida.");
+      }
+    }
+    juego.defendiendo = false;
+    if (h.vida <= 0) { h.vida = 0; juego.vista = "muerte"; return; }
+    if (juego.clase === "paladin") { const r = Math.min(3, h.vidaMax - h.vida); if (r > 0) { h.vida += r; log("✨ El Escudo Sagrado te cura +" + r + "."); } }
+    aplicarEstadosEnemigo(); // quemadura y veneno dañan al enemigo
+  }
+
+  function ganarXP(x) {
+    const h = juego.heroe;
+    h.xp += x;
+    while (h.xp >= xpNext(h.nivel)) {
+      h.xp -= xpNext(h.nivel);
+      h.nivel++;
+      h.vidaMax += 10; h.ataque += 2; h.defensa += 1; h.magia += 2; h.manaMax += 3;
+      h.vida = h.vidaMax; h.mana = h.manaMax;
+      juego.recompensa.subioA = h.nivel; sNivel();
+    }
+  }
+  function victoria() {
+    const h = juego.heroe, en = juego.enemigo;
+    let oro = en.oro;
+    if (juego.clase === "picaro") oro = Math.round(oro * 1.4); // el pícaro roba oro extra
+    juego.racha = (juego.racha || 0) + 1;
+    let bonoRacha = 0;
+    if (juego.racha >= 3) { bonoRacha = juego.racha * 2; } // racha de 3+ da oro extra
+    juego.recompensa = { nombre: en.n, emoji: en.e, xp: en.xp, oro: oro, jefe: en.jefe, elite: en.elite, subioA: null, racha: juego.racha, bonoRacha: bonoRacha };
+    h.oro += oro + bonoRacha;
+    sMoneda();
+    ganarXP(en.xp);
+    h.piso++;
+    juego.enemigo = null;
+    // Al vencer a un jefe, te ofrece 3 reliquias para elegir una
+    juego.reliquiasOfrecidas = en.jefe ? barajar(RELIQUIAS.filter(rel => !(rel.n === "Colmillo Vampírico" && h.robavidas))).slice(0, 3) : null;
+    juego.vista = "recompensa";
+  }
+  function elegirReliquia(i) {
+    const rel = juego.reliquiasOfrecidas[i];
+    rel.ap(juego.heroe);
+    juego.heroe.reliquias.push(rel.e + " " + rel.n);
+    juego.reliquiasOfrecidas = null;
+    log("🏆 Consigues: " + rel.e + " " + rel.n + "!");
+    bajar();
+  }
+
+  function descansar() {
+    juego.heroe.vida = juego.heroe.vidaMax;
+    juego.heroe.mana = juego.heroe.manaMax;
+    juego.racha = 0; // al descansar se corta la racha
+    log("🛌 Descansas: vida y maná al máximo.");
+    guardar(); render();
+  }
+  function volverDeMuerte() {
+    juego.heroe.vida = juego.heroe.vidaMax; juego.heroe.mana = juego.heroe.manaMax;
+    juego.heroe.piso = Math.max(1, juego.heroe.piso - 2);
+    juego.racha = 0;
+    juego.vista = "pueblo"; guardar(); render();
+  }
+
+  // ---- Tienda ----
+  function comprarPocion() { if (juego.heroe.oro >= 15) { juego.heroe.oro -= 15; juego.heroe.pociones++; guardar(); render(); } }
+  function mejorarArma() { const c = (juego.heroe.arma + 1) * 40; if (juego.heroe.oro >= c) { juego.heroe.oro -= c; juego.heroe.arma++; guardar(); render(); } }
+  function mejorarArmadura() { const c = (juego.heroe.armadura + 1) * 40; if (juego.heroe.oro >= c) { juego.heroe.oro -= c; juego.heroe.armadura++; guardar(); render(); } }
+  function entrenarAtaque() { if (juego.heroe.oro >= 50) { juego.heroe.oro -= 50; juego.heroe.ataque++; guardar(); render(); } }
+  function entrenarDefensa() { if (juego.heroe.oro >= 50) { juego.heroe.oro -= 50; juego.heroe.defensa++; guardar(); render(); } }
+  function entrenarVida() { if (juego.heroe.oro >= 40) { juego.heroe.oro -= 40; juego.heroe.vidaMax += 8; juego.heroe.vida += 8; guardar(); render(); } }
+
+  function setVista(v) { juego.vista = v; render(); }
+  function irAClases() { if (juego) juego.vista = "clases"; render(); }
+  function volverAlPueblo() { juego.vista = "pueblo"; render(); }
+
+  // ===== Render =====
+  function claseVida(v, max) { const p = v / max; return p > .5 ? "vida-alta" : p > .25 ? "vida-media" : "vida-baja"; }
+  function barra(v, max, clase) {
+    return `<div class="barra"><div class="barra-relleno ${clase}" style="width:${Math.max(0, v / max * 100)}%"></div></div>`;
+  }
+  function renderLog() { return `<div class="log">${juego.log.map(l => `<div>${l}</div>`).join("")}</div>`; }
+
+  function render() {
+    if (!juego || juego.vista === "clases") { renderIntro(); return; }
+    if (juego.vista === "combate") return renderCombate();
+    if (juego.vista === "tienda") return renderTienda();
+    if (juego.vista === "recompensa") return renderRecompensa();
+    if (juego.vista === "evento") return renderEvento();
+    if (juego.vista === "muerte") return renderMuerte();
+    return renderPueblo();
+  }
+
+  function renderIntro() {
+    const hayPartida = !!juego;
+    app.innerHTML = `<div class="caja">
+      <div class="titulo-caja">Elige tu clase</div>
+      <div style="font-size:13px;opacity:.85;">Cada una empieza con un objeto y una ventaja distinta.${hayPartida ? " <br>⚠️ Al elegir empiezas una <b>aventura nueva</b>." : ""}</div>
+    </div>
+    ${CLASES.map(c => `<div class="caja clase-op" onclick="nuevoJuego('${c.id}')" style="cursor:pointer;text-align:left;">
+      <div style="font-size:18px;font-weight:bold;color:#ffd76a;">${c.emoji} ${c.nombre}</div>
+      <div style="font-size:13px;margin:4px 0;"><b>Objeto:</b> ${c.item}</div>
+      <div style="font-size:13px;opacity:.9;">${c.desc}</div>
+      <div style="font-size:12px;margin-top:6px;opacity:.85;">❤️ ${c.stats.vidaMax} · ⚔️ ${c.stats.ataque} · 🛡️ ${c.stats.defensa} · ✨ ${c.stats.magia} · maná ${c.stats.manaMax}</div>
+    </div>`).join("")}
+    ${hayPartida ? `<button class="btn-sec" onclick="volverAlPueblo()">⬅️ Cancelar</button>` : ""}`;
+  }
+
+  function renderPueblo() {
+    const h = juego.heroe, cl = claseActual();
+    app.innerHTML = `<div class="caja">
+      <div class="heroe-emoji">${cl.emoji}</div>
+      <div class="titulo-caja">🏰 Pueblo · ${cl.nombre} · Nivel ${h.nivel}</div>
+      <div style="font-size:13px;opacity:.85;margin-bottom:6px;">Objeto: ${cl.item} · 🏅 Récord: piso ${cargarRecord()}</div>
+      <div class="stats">
+        <div class="stat-linea"><span>❤️ Vida</span><span>${h.vida}/${h.vidaMax}</span></div>
+        <div class="stat-linea"><span>✨ Maná</span><span>${h.mana}/${h.manaMax}</span></div>
+        <div class="stat-linea"><span>⚔️ Ataque</span><span>${atkTotal()} <small>(base ${h.ataque} + arma ${h.arma * 2})</small></span></div>
+        <div class="stat-linea"><span>🛡️ Defensa</span><span>${defTotal()} <small>(base ${h.defensa} + armadura ${h.armadura * 2})</small></span></div>
+        <div class="stat-linea"><span>⭐ Experiencia</span><span>${h.xp}/${xpNext(h.nivel)}</span></div>
+        <div class="stat-linea"><span>💰 Oro</span><span>${h.oro}</span></div>
+        <div class="stat-linea"><span>🧪 Pociones</span><span>${h.pociones}</span></div>
+        <div class="stat-linea"><span>🕳️ Próximo piso</span><span class="pill">${h.piso}</span></div>
+      </div>
+      ${h.reliquias && h.reliquias.length ? `<div style="margin-top:8px;font-size:13px;text-align:left;"><b>🏆 Reliquias:</b> ${h.reliquias.join(" · ")}</div>` : ""}
+    </div>
+    <button class="btn-grande" onclick="entrarMazmorra()">⚔️ Bajar a la mazmorra (Piso ${h.piso})</button>
+    <div class="acciones">
+      <button class="btn-accion btn-tienda" onclick="setVista('tienda')">🛒 Tienda</button>
+      <button class="btn-accion a-pocion" onclick="descansar()">🛌 Descansar</button>
+    </div>
+    <button class="btn-sec" style="margin-top:12px;" onclick="irAClases()">🔄 Cambiar de clase</button>`;
+  }
+
+  function renderCombate() {
+    const h = juego.heroe, en = juego.enemigo, cl = claseActual();
+    const costoMagia = juego.clase === "mago" ? 3 : 4;
+    app.innerHTML = `<div class="caja caja-enemigo">
+      ${juego._dano ? `<div class="dano-flotante">-${juego._dano}</div>` : ""}
+      <div>${en.jefe ? '<span class="jefe-badge">👑 JEFE</span>' : en.elite ? '<span class="jefe-badge elite-badge">👑 ÉLITE</span>' : "Piso " + (h.piso)}${juego.racha >= 2 ? ` · 🔥 Racha ${juego.racha}` : ""}</div>
+      <div class="enemigo-emoji ${juego._hit ? "sacudir golpeado" : ""}">${en.e}</div>
+      <div class="enemigo-nom">${en.n}</div>
+      <div style="font-size:16px;min-height:20px;">${en.estados.quemado > 0 ? "🔥" : ""}${en.estados.congelado > 0 ? "🧊" : ""}${en.estados.veneno > 0 ? "☠️" : ""}</div>
+      <div class="etiqueta-barra"><span>❤️ ${Math.max(0, en.vida)}/${en.vidaMax}</span></div>
+      ${barra(en.vida, en.vidaMax, claseVida(en.vida, en.vidaMax))}
+    </div>
+    <div class="caja">
+      <div class="etiqueta-barra"><span>🧙 Nivel ${h.nivel}</span><span>❤️ ${h.vida}/${h.vidaMax}</span></div>
+      ${barra(h.vida, h.vidaMax, claseVida(h.vida, h.vidaMax))}
+      <div class="etiqueta-barra"><span>✨ Maná</span><span>${h.mana}/${h.manaMax}</span></div>
+      ${barra(h.mana, h.manaMax, "mana")}
+      ${renderLog()}
+    </div>
+    <div class="acciones">
+      <button class="btn-accion a-atacar" onclick="atacar()">${cl.atacarLabel}</button>
+      <button class="btn-accion a-defender" onclick="defender()">🛡️ Defender</button>
+      <button class="btn-accion a-magia" onclick="magia()" ${h.mana < costoMagia ? "disabled" : ""}>${cl.especialLabel} (${costoMagia}✨)</button>
+      <button class="btn-accion a-pocion" onclick="usarPocion()" ${h.pociones <= 0 ? "disabled" : ""}>🧪 Poción (${h.pociones})</button>
+      <button class="btn-accion a-huir" onclick="huir()">🏃 Huir al pueblo</button>
+    </div>`;
+    juego._hit = false; juego._dano = 0; // la sacudida y el número solo se ven una vez
+  }
+
+  function renderRecompensa() {
+    const r = juego.recompensa;
+    let html = `<div class="caja">
+      <div class="recompensa-emoji">${r.jefe ? "🏆" : "✅"}</div>
+      <div class="titulo-caja">${r.jefe ? "¡JEFE DERROTADO!" : "¡Victoria!"}</div>
+      <div>Has vencido a ${r.emoji} <b>${r.nombre}</b>${r.elite ? " 👑" : ""}.</div>
+      <div style="margin-top:6px;">⭐ +${r.xp} experiencia · 💰 +${r.oro} oro${r.bonoRacha ? ` · 🔥 +${r.bonoRacha} (racha ${r.racha})` : ""}</div>
+      ${r.subioA ? `<div style="margin-top:8px;color:#ffd76a;font-weight:bold;">🎉 ¡Subes al nivel ${r.subioA}! Vida y maná al máximo.</div>` : ""}
+    </div>`;
+    if (juego.reliquiasOfrecidas) {
+      html += `<div class="caja"><div class="titulo-caja">🏆 Elige una reliquia</div>
+        ${juego.reliquiasOfrecidas.map((rel, i) => `<div class="tienda-item" style="cursor:pointer;" onclick="elegirReliquia(${i})">
+          <div><b>${rel.e} ${rel.n}</b><br><small>${rel.d}</small></div>
+          <button class="btn-accion a-magia">Elegir</button>
+        </div>`).join("")}
+      </div>`;
+    } else {
+      html += `<button class="btn-grande" onclick="bajar()">⬇️ Seguir bajando (Piso ${juego.heroe.piso})</button>
+      <button class="btn-sec" onclick="setVista('pueblo')">🏰 Volver al pueblo</button>`;
+    }
+    app.innerHTML = html;
+  }
+
+  function renderEvento() {
+    const ev = juego.evento;
+    app.innerHTML = `<div class="caja">
+      <div class="recompensa-emoji">${ev.e}</div>
+      <div class="titulo-caja">${ev.t}</div>
+      <div style="margin-bottom:6px;">${ev.d}</div>
+      <div style="color:#ffd76a;font-weight:bold;">${ev.r}</div>
+    </div>
+    <button class="btn-grande" onclick="entrarMazmorra()">⬇️ Seguir bajando (Piso ${juego.heroe.piso})</button>
+    <button class="btn-sec" onclick="setVista('pueblo')">🏰 Volver al pueblo</button>`;
+  }
+
+  function renderMuerte() {
+    app.innerHTML = `<div class="caja">
+      <div class="recompensa-emoji">💀</div>
+      <div class="titulo-caja">Has caído...</div>
+      <div>Pero un héroe nunca se rinde. Vuelves al pueblo para recuperarte.</div>
+      <div style="margin-top:8px;color:#ffd76a;font-weight:bold;">🏅 Récord: piso ${cargarRecord()}</div>
+      <button class="btn-grande" style="margin-top:14px;" onclick="volverDeMuerte()">🏰 Volver al pueblo</button>
+    </div>`;
+  }
+
+  function renderTienda() {
+    const h = juego.heroe;
+    const cArma = (h.arma + 1) * 40, cArmadura = (h.armadura + 1) * 40;
+    app.innerHTML = `<div class="caja">
+      <div class="titulo-caja">🛒 Tienda · 💰 ${h.oro} oro</div>
+      <div class="tienda-item">
+        <div>🧪 <b>Poción</b><br><small>Cura media vida. Tienes ${h.pociones}.</small></div>
+        <button class="btn-accion a-pocion" onclick="comprarPocion()" ${h.oro < 15 ? "disabled" : ""}>15 💰</button>
+      </div>
+      <div class="tienda-item">
+        <div>⚔️ <b>Mejorar arma</b> (nivel ${h.arma})<br><small>+2 de ataque</small></div>
+        <button class="btn-accion a-atacar" onclick="mejorarArma()" ${h.oro < cArma ? "disabled" : ""}>${cArma} 💰</button>
+      </div>
+      <div class="tienda-item">
+        <div>🛡️ <b>Mejorar armadura</b> (nivel ${h.armadura})<br><small>+2 de defensa</small></div>
+        <button class="btn-accion a-defender" onclick="mejorarArmadura()" ${h.oro < cArmadura ? "disabled" : ""}>${cArmadura} 💰</button>
+      </div>
+      <div class="tienda-item">
+        <div>💪 <b>Entrenar ataque</b><br><small>+1 de ataque base (para siempre)</small></div>
+        <button class="btn-accion a-atacar" onclick="entrenarAtaque()" ${h.oro < 50 ? "disabled" : ""}>50 💰</button>
+      </div>
+      <div class="tienda-item">
+        <div>🧱 <b>Entrenar defensa</b><br><small>+1 de defensa base (para siempre)</small></div>
+        <button class="btn-accion a-defender" onclick="entrenarDefensa()" ${h.oro < 50 ? "disabled" : ""}>50 💰</button>
+      </div>
+      <div class="tienda-item">
+        <div>❤️ <b>Entrenar vida</b><br><small>+8 de vida máxima</small></div>
+        <button class="btn-accion a-pocion" onclick="entrenarVida()" ${h.oro < 40 ? "disabled" : ""}>40 💰</button>
+      </div>
+    </div>
+    <button class="btn-sec" onclick="setVista('pueblo')">⬅️ Volver</button>`;
+  }
+
+  // ===== Arranque =====
+  juego = cargar();
+  if (juego) { // por si viene un guardado antiguo, lo dejamos compatible
+    if (!juego.clase) juego.clase = "guerrero";
+    if (juego.enemigo && !juego.enemigo.estados) juego.enemigo.estados = { quemado: 0, congelado: 0, veneno: 0 };
+    if (juego.heroe && !juego.heroe.reliquias) juego.heroe.reliquias = [];
+    if (juego.heroe && juego.heroe.robavidas === undefined) juego.heroe.robavidas = false;
+    if (juego.racha === undefined) juego.racha = 0;
+  }
+  render();
+</script>

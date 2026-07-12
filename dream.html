@@ -1,0 +1,2536 @@
+<meta charset="utf-8">
+<title>Crea tu 11 del Mundial 2026</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Trebuchet MS", Verdana, sans-serif;
+    background: linear-gradient(160deg, #128a33 0%, #17a84e 100%);
+    color: #fff;
+    min-height: 100vh;
+    transition: background .4s;
+    padding: 16px;
+    text-align: center;
+  }
+  /* Modo "Viaje al pasado": cesped mas oscuro y antiguo */
+  body.modo-pasado {
+    background: linear-gradient(160deg, #05330f 0%, #0a5a24 100%);
+  }
+
+  /* Pantalla de inicio (portada) */
+  #portada {
+    position: fixed; inset: 0; z-index: 1200;
+    background: linear-gradient(160deg, #128a33, #0a5a24);
+    display: flex; align-items: center; justify-content: center;
+    text-align: center; padding: 20px;
+    transition: opacity .5s ease, transform .5s ease;
+  }
+  /* Al pulsar Jugar, el menu se desvanece con un pequeño zoom */
+  #portada.saliendo { opacity: 0; transform: scale(1.12); pointer-events: none; }
+  /* El juego aparece suavemente */
+  @keyframes entraJuego { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  body.jugando-entra #campo { animation: entraJuego .55s ease-out; }
+  .portada-caja { max-width: 420px; width: 100%; }
+  /* Cromos decorativos a los lados del menu */
+  .portada-carta {
+    position: absolute; top: 12px; pointer-events: none; z-index: 1;
+  }
+  #carta-messi { position: absolute; left: 4px;  transform: rotate(-8deg) scale(.8); transform-origin: left top; }
+  #carta-cr7  { position: absolute; right: 4px; transform: rotate(8deg) scale(.8); transform-origin: right top; }
+  #carta-haaland { position: absolute; left: 4px;  top: auto; bottom: 12px; transform: rotate(8deg) scale(.8); transform-origin: left bottom; }
+  #carta-mbappe  { position: absolute; right: 4px; top: auto; bottom: 12px; transform: rotate(-8deg) scale(.8); transform-origin: right bottom; }
+  /* En pantallas grandes los separamos más del centro */
+  @media (min-width: 900px) {
+    #carta-messi, #carta-haaland { left: calc(50% - 370px); }
+    #carta-cr7, #carta-mbappe  { right: calc(50% - 370px); }
+  }
+  /* En pantallas muy estrechas (móvil pequeño) se ocultan para no tapar los botones */
+  @media (max-width: 480px) {
+    .portada-carta { display: none; }
+  }
+  .portada-titulo {
+    font-size: 46px; font-weight: 900; color: #ffd700;
+    text-shadow: 3px 3px 0 #044d19; margin-bottom: 4px;
+  }
+  .portada-sub { font-size: 16px; opacity: .92; margin-bottom: 16px; }
+  #portada-usuario { font-size: 15px; margin-bottom: 22px; min-height: 40px; line-height: 1.5; }
+  .portada-botones { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+  .portada-botones button {
+    width: 240px; font-size: 19px; font-weight: bold; cursor: pointer;
+    border: none; border-radius: 30px; padding: 14px;
+    box-shadow: 0 5px 0 rgba(0,0,0,.3); transition: transform .08s;
+  }
+  .portada-botones button:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,.3); }
+  #btn-jugar { background: #ffdd33; color: #0b6623; }
+  #btn-portada-equipos { background: #fff; color: #0b6623; }
+  #btn-portada-misiones { background: #6c3fb5; color: #fff; }
+  #btn-home {
+    position: fixed; top: 10px; left: 10px; z-index: 900;
+    font-size: 15px; font-weight: bold;
+    background: rgba(0,0,0,.35); color: #fff;
+    border: 2px solid rgba(255,255,255,.55); border-radius: 16px;
+    padding: 7px 12px; cursor: pointer;
+  }
+  /* Cajita del nombre de usuario (arriba a la derecha) */
+  #usuario-box {
+    position: fixed; top: 10px; right: 10px; z-index: 900;
+    background: rgba(0,0,0,.35);
+    border: 2px solid rgba(255,255,255,.55);
+    border-radius: 16px; padding: 6px 12px;
+    display: flex; flex-direction: column; align-items: stretch; gap: 2px;
+  }
+  .usuario-fila { display: flex; align-items: center; gap: 6px; }
+  #usuario-titulo {
+    display: none;
+    font-size: 12px; font-weight: bold; color: #ffd700;
+    text-align: center; margin-top: 2px;
+    text-shadow: 0 1px 2px rgba(0,0,0,.5);
+  }
+  /* Titulo supremo (GOAT): texto arcoiris que brilla */
+  #usuario-titulo.supremo {
+    color: transparent;
+    background: linear-gradient(90deg,#ff5f6d,#ffc371,#47e891,#4facfe,#c86dd7,#ff5f6d);
+    background-size: 200% auto;
+    -webkit-background-clip: text; background-clip: text;
+    text-shadow: none;
+    animation: brillo 2.5s linear infinite;
+  }
+  #usuario-input {
+    background: transparent; border: none; color: #fff;
+    font-weight: bold; font-size: 14px; width: 120px; outline: none;
+    font-family: inherit;
+  }
+  #usuario-input::placeholder { color: rgba(255,255,255,.6); font-weight: normal; }
+  h1 {
+    font-size: 30px;
+    text-shadow: 2px 2px 0 #044d19;
+    margin-bottom: 4px;
+  }
+  .subtitulo { opacity: .9; margin-bottom: 14px; font-size: 15px; }
+
+  .barra {
+    display: inline-block;
+    background: rgba(0,0,0,.25);
+    padding: 8px 16px;
+    border-radius: 30px;
+    margin-bottom: 14px;
+    font-size: 17px;
+    font-weight: bold;
+  }
+
+  /* Botones para elegir la formacion (tactica) */
+  .formaciones {
+    margin-bottom: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+  }
+  .formaciones .titulo-f { font-weight: bold; margin-right: 4px; }
+  .btn-formacion {
+    font-size: 15px;
+    font-weight: bold;
+    color: #fff;
+    background: rgba(0,0,0,.25);
+    border: 2px solid rgba(255,255,255,.6);
+    border-radius: 20px;
+    padding: 6px 14px;
+    cursor: pointer;
+  }
+  .btn-formacion.activa {
+    background: #ffdd33;
+    color: #0b6623;
+    border-color: #fff;
+  }
+
+  /* Botones para elegir el modo de juego */
+  .modos {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 8px; margin-bottom: 16px;
+  }
+  .btn-modo {
+    font-size: 15px; font-weight: bold; color: #fff;
+    background: rgba(0,0,0,.3);
+    border: 2px solid rgba(255,255,255,.6);
+    border-radius: 22px; padding: 9px 18px; cursor: pointer;
+  }
+  .btn-modo.activa { background: #ffdd33; color: #0b6623; border-color: #fff; }
+  .btn-modo[data-modo="pasado"].activa { background: #c8a2ff; color: #3d1a6b; }
+
+  /* Botones extra: 1 contra 1 y dificultad */
+  .extras { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:10px; }
+  .btn-extra {
+    font-size:15px; font-weight:bold; color:#fff;
+    background: rgba(0,0,0,.3);
+    border:2px solid rgba(255,255,255,.6); border-radius:20px;
+    padding:8px 16px; cursor:pointer;
+  }
+  #btn-versus.activo { background:#ff851b; color:#3b1a00; border-color:#fff; }
+  #btn-maquina.activo { background:#00b3a4; color:#00332f; border-color:#fff; }
+  #btn-dificil.activo { background:#ff4136; color:#fff; border-color:#fff; }
+  #turno-versus {
+    font-size:19px; font-weight:bold; margin-bottom:12px; min-height:24px;
+  }
+
+  /* Adornos del menu (premios de misiones) y premio exclusivo */
+  /* Vitrina de premios (adornos del menu) */
+  .vitrina {
+    max-width:430px; margin:0 auto 12px;
+    background:rgba(0,0,0,.22);
+    border:2px solid rgba(255,255,255,.55);
+    border-radius:14px; padding:8px 14px;
+  }
+  .vitrina-titulo { font-size:14px; font-weight:bold; opacity:.9; margin-bottom:4px; }
+  #decoracion { font-size:26px; min-height:30px; letter-spacing:4px; }
+  #decoracion.vacio { font-size:13px; letter-spacing:normal; opacity:.75; font-weight:normal; }
+  #decoracion.colapsado { max-height:78px; overflow:hidden; }
+  #toggle-titulos {
+    display:none; margin-top:6px; font-size:13px; font-weight:bold;
+    background:transparent; color:#fff; border:none; cursor:pointer; text-decoration:underline;
+  }
+  #premio-exclusivo {
+    display:none;
+    font-size:17px; font-weight:bold; color:#3d1a6b;
+    background:linear-gradient(90deg,#ffd700,#fff3b0,#ffd700);
+    background-size:200% auto;
+    border-radius:12px; padding:8px 14px; margin:0 auto 12px; max-width:420px;
+    animation: brillo 3s linear infinite;
+  }
+  @keyframes brillo { to { background-position:200% center; } }
+  #toast-mision {
+    display:none;
+    position:fixed; top:16px; left:50%; transform:translateX(-50%);
+    background:#fff; color:#0b6623; font-weight:bold;
+    padding:12px 18px; border-radius:14px; box-shadow:0 6px 20px rgba(0,0,0,.45);
+    z-index:1000; max-width:92%;
+  }
+  /* Banner del reto diario */
+  #reto-diario {
+    max-width:440px; margin:0 auto 12px;
+    background:rgba(42,109,244,.28);
+    border:2px solid rgba(255,255,255,.5);
+    border-radius:14px; padding:9px 14px; font-size:14px;
+  }
+  #reto-diario.hecho { background:rgba(46,204,64,.32); }
+
+  /* Seccion de misiones */
+  .zona-misiones { margin:24px auto; max-width:540px; }
+  #ver-misiones {
+    font-size:16px; background:#6c3fb5; color:#fff;
+    border:2px solid #fff; border-radius:20px; padding:10px 22px; cursor:pointer; font-weight:bold;
+  }
+  #misiones-panel { display:none; margin-top:14px; }
+  .mision-grupo { margin-bottom:14px; }
+  .mision-grupo h4 { margin-bottom:6px; font-size:17px; }
+  .mision {
+    display:flex; align-items:center; gap:10px;
+    background:rgba(255,255,255,.92); color:#222;
+    border-radius:10px; padding:9px 12px; margin-bottom:6px; text-align:left;
+  }
+  .mision.hecha { background:#d7f5dd; }
+  .mision-estado { font-size:18px; }
+  .mision-texto { flex:1; font-size:14px; }
+  .mision-premio { font-size:22px; }
+  .mision-exclusivo {
+    margin-top:8px; font-weight:bold; padding:12px; border-radius:10px;
+    background:rgba(0,0,0,.28); font-size:15px;
+  }
+  .mision-exclusivo.desbloqueado {
+    background:linear-gradient(90deg,#ffd700,#fff3b0,#ffd700);
+    background-size:200% auto; color:#3d1a6b;
+    animation: brillo 3s linear infinite;
+  }
+
+  /* Tarjeta para presumir el equipo */
+  #tarjeta-overlay {
+    display:none; position:fixed; inset:0; z-index:1100;
+    background:rgba(0,0,0,.7);
+    align-items:center; justify-content:center; padding:16px;
+  }
+  #tarjeta-card {
+    background:linear-gradient(160deg,#ffffff,#eaf7ee);
+    color:#173a22; border:4px solid #0b6623; border-radius:18px;
+    padding:18px; max-width:360px; width:100%; max-height:88vh; overflow:auto;
+    box-shadow:0 10px 40px rgba(0,0,0,.5);
+  }
+  .tarjeta-titulo { font-size:22px; font-weight:bold; color:#0b6623; }
+  .tarjeta-sub { font-size:14px; margin:2px 0 6px; }
+  .tarjeta-media { font-size:16px; font-weight:bold; margin-bottom:10px; }
+  .tarjeta-jug {
+    display:flex; justify-content:space-between; gap:8px;
+    border-bottom:1px dashed #b9d8c3; padding:4px 2px; font-size:14px; text-align:left;
+  }
+  .tarjeta-botones { margin-top:14px; display:flex; gap:8px; justify-content:center; }
+  .tarjeta-botones button {
+    font-size:14px; font-weight:bold; border:none; border-radius:16px;
+    padding:9px 16px; cursor:pointer;
+  }
+  #tarjeta-imprimir { background:#0b6623; color:#fff; }
+  #tarjeta-cerrar { background:#c0392b; color:#fff; }
+  .reg-tarjeta-btn {
+    margin-left:8px; font-size:12px; background:#2a6df4; color:#fff;
+    border:none; border-radius:12px; padding:3px 9px; cursor:pointer; font-weight:bold;
+  }
+  /* Al imprimir, solo se ve la tarjeta */
+  @media print {
+    body > *:not(#tarjeta-overlay) { display:none !important; }
+    #tarjeta-overlay { position:static; background:none; display:block !important; padding:0; }
+    #tarjeta-card { border-color:#0b6623; box-shadow:none; max-height:none; }
+    .tarjeta-botones { display:none !important; }
+  }
+
+  /* Monedas y tienda */
+  #monedas-box { font-size:13px; font-weight:bold; color:#ffd700; text-align:center; margin-top:2px; }
+  .zona-tienda { margin:24px auto; max-width:540px; }
+  #ver-tienda {
+    font-size:16px; background:#e0a800; color:#3b2a00;
+    border:2px solid #fff; border-radius:20px; padding:10px 22px; cursor:pointer; font-weight:bold;
+  }
+  #tienda-panel { display:none; margin-top:14px; }
+  .tienda-saldo { font-size:16px; font-weight:bold; margin-bottom:12px; }
+  .sobre-item {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:rgba(255,255,255,.92); color:#222;
+    border-radius:12px; padding:10px 12px; margin-bottom:8px; text-align:left;
+  }
+  .sobre-emoji { font-size:24px; }
+  .btn-comprar {
+    font-size:15px; font-weight:bold; background:#0b6623; color:#fff;
+    border:none; border-radius:16px; padding:9px 14px; cursor:pointer; white-space:nowrap;
+  }
+  .btn-comprar:disabled { background:#999; cursor:default; }
+  .tienda-resultado { margin-top:8px; font-weight:bold; min-height:20px; }
+
+  /* Ventana de sobre abierto */
+  #sobre-overlay {
+    display:none; position:fixed; inset:0; z-index:1150;
+    background:rgba(0,0,0,.75); align-items:center; justify-content:center; padding:16px;
+  }
+  #sobre-card {
+    background:linear-gradient(160deg,#1b2a20,#0b1a12);
+    border:3px solid #ffd700; border-radius:18px; padding:18px; text-align:center; max-width:280px;
+  }
+  .sobre-titulo { font-size:20px; font-weight:bold; color:#ffd700; margin-bottom:10px; }
+  #sobre-card .carta { margin:0 auto; }
+  .sobre-modo { margin-top:10px; font-size:13px; opacity:.9; }
+  #sobre-cerrar {
+    margin-top:14px; font-size:14px; font-weight:bold; background:#c0392b; color:#fff;
+    border:none; border-radius:16px; padding:9px 18px; cursor:pointer;
+  }
+
+  /* Álbum de cromos */
+  .zona-album { margin:24px auto; max-width:640px; }
+  #ver-album {
+    font-size:16px; background:#2a6df4; color:#fff;
+    border:2px solid #fff; border-radius:20px; padding:10px 22px; cursor:pointer; font-weight:bold;
+  }
+  #album-panel { display:none; margin-top:14px; }
+  .album-contador { font-size:16px; font-weight:bold; margin-bottom:12px; }
+  .album-grid { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }
+  .album-carta { width:120px; }
+  .album-carta .fifa-rating { font-size:22px; }
+  .album-carta .fifa-foto { font-size:36px; }
+  .album-carta .fifa-nombre { font-size:13px; }
+  .album-bloqueada { background:#5a5a5a !important; filter:grayscale(1); opacity:.65; border:3px solid #888; }
+
+  /* Celebraciones (misiones completas y álbum completo) */
+  .celebra-overlay {
+    display:none; position:fixed; inset:0; z-index:1300;
+    align-items:center; justify-content:center; padding:20px; text-align:center;
+  }
+  #celebra-misiones { background:radial-gradient(circle, rgba(40,25,0,.88), rgba(0,0,0,.92)); }
+  #celebra-coleccion { background:radial-gradient(circle, rgba(30,0,40,.88), rgba(0,0,0,.92)); }
+  .celebra-caja { max-width:400px; }
+  #celebra-misiones .celebra-caja { animation: celebraEntra .5s ease-out; }
+  #celebra-coleccion .celebra-caja { animation: celebraGiroEntra .6s ease-out; }
+  @keyframes celebraEntra { 0%{opacity:0; transform:scale(.4);} 100%{opacity:1; transform:scale(1);} }
+  @keyframes celebraGiroEntra { 0%{opacity:0; transform:scale(.3) rotate(-30deg);} 100%{opacity:1; transform:scale(1) rotate(0);} }
+  .celebra-emoji { font-size:84px; }
+  .celebra-bounce { display:inline-block; animation: celebraBounce 1s ease infinite; }
+  @keyframes celebraBounce { 0%,100%{transform:translateY(0) scale(1);} 50%{transform:translateY(-22px) scale(1.12);} }
+  .celebra-girar { display:inline-block; animation: celebraGira 2s linear infinite; }
+  @keyframes celebraGira { to { transform: rotate(360deg); } }
+  .celebra-titulo {
+    font-size:27px; font-weight:900; margin:8px 0 6px; line-height:1.15;
+    background-size:200% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:brillo 2s linear infinite;
+  }
+  .celebra-oro .celebra-titulo { background-image:linear-gradient(90deg,#ffd700,#fff3b0,#ffd700); }
+  .celebra-arcoiris .celebra-titulo { background-image:linear-gradient(90deg,#ff5f6d,#ffc371,#47e891,#4facfe,#c86dd7,#ff5f6d); }
+  .celebra-sub { color:#fff; font-size:16px; margin-bottom:18px; }
+  .celebra-btn {
+    font-size:18px; font-weight:bold; color:#3d1a6b; border:none; border-radius:26px;
+    padding:12px 26px; cursor:pointer;
+    background:linear-gradient(90deg,#ffd700,#fff3b0,#ffd700); background-size:200% auto;
+    animation:brillo 3s linear infinite;
+  }
+  /* Sobre cerrado (para tocar y abrir) */
+  .sobre-sellado {
+    width:160px; height:220px; margin:0 auto; cursor:pointer;
+    border-radius:16px; border:3px solid #ffd700;
+    background:linear-gradient(160deg,#3a2b6b,#6c3fb5);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    box-shadow:0 0 18px rgba(255,215,0,.5);
+    transition:transform .1s;
+  }
+  .sobre-sellado:active { transform:scale(.96); }
+  .sobre-icono { font-size:64px; }
+  .sobre-toca { font-size:14px; font-weight:bold; }
+  .sobre-sellado.abriendo { animation:sobreVibra .6s ease-in-out, sobreBrilla 1.1s ease-in-out; }
+  @keyframes sobreVibra {
+    0%,100%{transform:translateX(0) rotate(0);}
+    20%{transform:translateX(-6px) rotate(-4deg);}
+    40%{transform:translateX(6px) rotate(4deg);}
+    60%{transform:translateX(-5px) rotate(-3deg);}
+    80%{transform:translateX(5px) rotate(3deg);}
+  }
+  @keyframes sobreBrilla {
+    0%{box-shadow:0 0 18px rgba(255,215,0,.5);}
+    70%{box-shadow:0 0 70px 24px rgba(255,255,255,.95);}
+    100%{box-shadow:0 0 30px rgba(255,215,0,.8);}
+  }
+  /* Destello de pantalla */
+  #sobre-flash {
+    position:fixed; inset:0; z-index:1160; background:#fff; opacity:0; pointer-events:none;
+  }
+  #sobre-flash.flash { animation:flashAnim .6s ease-out; }
+  @keyframes flashAnim { 0%{opacity:0;} 45%{opacity:1;} 100%{opacity:0;} }
+  /* La carta aparece con un "pop" */
+  @keyframes cartaRevela {
+    0%{opacity:0; transform:scale(.4) rotate(-12deg);}
+    60%{opacity:1; transform:scale(1.12) rotate(4deg);}
+    100%{transform:scale(1) rotate(0);}
+  }
+  .carta-revelada { animation:cartaRevela .5s ease-out; }
+
+  #boton {
+    font-size: 22px;
+    font-weight: bold;
+    color: #0b6623;
+    background: #ffdd33;
+    border: none;
+    border-radius: 40px;
+    padding: 16px 34px;
+    cursor: pointer;
+    box-shadow: 0 5px 0 #c9a600;
+    transition: transform .08s;
+    margin-bottom: 8px;
+  }
+  #boton:active { transform: translateY(4px); box-shadow: 0 1px 0 #c9a600; }
+  #boton:disabled { opacity: .5; cursor: default; box-shadow: 0 5px 0 #999; background:#ddd; }
+
+  .posicion-buscada { font-size: 18px; margin: 6px 0 12px; min-height: 24px; }
+
+  #cartas {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin: 10px 0 22px;
+    min-height: 40px;
+  }
+  .carta {
+    position: relative; overflow: hidden;
+    width: 150px;
+    background: linear-gradient(160deg, #fff8e1, #ffe28a); /* color por defecto */
+    color: #222;
+    border-radius: 14px;
+    padding: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,.35);
+    border: 3px solid #c9a600;
+    transition: transform .12s, box-shadow .12s;
+  }
+  .carta:hover { transform: translateY(-8px) scale(1.05) rotate(-1deg); box-shadow: 0 10px 22px rgba(0,0,0,.45); }
+  /* Destello holográfico que cruza la carta al pasar por encima */
+  .carta::after {
+    content:""; position:absolute; top:0; left:-70%; width:55%; height:100%;
+    background: linear-gradient(120deg, transparent, rgba(255,255,255,.55), transparent);
+    transform: skewX(-20deg); pointer-events:none;
+  }
+  .carta:hover::after { animation: brilloPasada .6s ease; }
+  @keyframes brilloPasada { from { left:-70%; } to { left:130%; } }
+  /* Zona blanca de dentro para que el nombre se lea bien sobre la bandera */
+  .carta .contenido {
+    background: rgba(255,255,255,.9);
+    border-radius: 10px;
+    padding: 8px 6px;
+  }
+  /* Cromo estilo FIFA: el color de la bandera es el marco; dentro, panel oscuro */
+  .contenido.fifa {
+    background: rgba(8,18,12,.62);
+    border-radius: 10px;
+    padding: 8px 8px 10px;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,.65);
+  }
+  .fifa-top { display: flex; align-items: flex-start; justify-content: space-between; }
+  .fifa-topleft { text-align: left; line-height: 1; }
+  .fifa-rating { font-size: 26px; font-weight: 900; }
+  .fifa-pos { font-size: 12px; font-weight: bold; opacity: .9; margin-top: 2px; }
+  .fifa-flag { font-size: 20px; }
+  .fifa-foto { font-size: 44px; margin: 2px 0 4px; }
+  .fifa-nombre {
+    font-weight: bold; font-size: 15px;
+    border-top: 1px solid rgba(255,255,255,.3); padding-top: 5px;
+  }
+
+  /* Animacion de entrada: el cromo llega girando y saltando */
+  @keyframes aparecer {
+    0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
+    70%  { transform: scale(1.15) rotate(10deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  }
+  .carta.animar {
+    animation: aparecer .5s ease-out backwards;
+  }
+
+  /* El boton "tiembla" mientras busca */
+  @keyframes buscando {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-6deg) scale(1.05); }
+    75% { transform: rotate(6deg) scale(1.05); }
+  }
+  #boton.buscando { animation: buscando .25s ease-in-out 2; }
+  .carta .emoji { font-size: 40px; }
+  .carta .nombre { font-weight: bold; font-size: 16px; margin: 4px 0; }
+  .carta .pais { font-size: 13px; }
+  .carta .media {
+    display: inline-block;
+    margin-top: 6px;
+    background: #0b6623;
+    color: #fff;
+    border-radius: 20px;
+    padding: 2px 10px;
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  /* El campo de futbol */
+  #campo {
+    max-width: 340px;
+    margin: 0 auto;
+    background: #0a7a34;
+    border: 4px solid #fff;
+    border-radius: 12px;
+    padding: 14px 8px;
+    position: relative;
+  }
+  #campo::before {
+    content: "";
+    position: absolute;
+    top: 50%; left: 8px; right: 8px;
+    border-top: 2px dashed rgba(255,255,255,.5);
+  }
+  #campo::after {
+    content: ""; position: absolute; left: 50%; top: 50%;
+    width: 74px; height: 74px; transform: translate(-50%, -50%);
+    border: 2px solid rgba(255,255,255,.4); border-radius: 50%; pointer-events: none;
+  }
+  .linea {
+    display: flex;
+    justify-content: space-around;
+    margin: 10px 0;
+  }
+  .hueco {
+    width: 60px;
+    font-size: 12px;
+  }
+  .hueco .circulo {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: rgba(255,255,255,.2);
+    border: 2px dashed rgba(255,255,255,.7);
+    margin: 0 auto 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  .hueco.lleno .circulo {
+    background: #ffdd33;
+    border: 2px solid #fff;
+  }
+  /* Cuando un jugador acaba de colocarse, da un saltito */
+  @keyframes plop {
+    0%   { transform: scale(0); }
+    70%  { transform: scale(1.35); }
+    100% { transform: scale(1); }
+  }
+  .circulo.plop { animation: plop .4s ease-out; }
+  .hueco .etiqueta { min-height: 26px; }
+
+  #mensaje-final {
+    font-size: 22px;
+    font-weight: bold;
+    margin: 16px 0;
+    min-height: 30px;
+  }
+  #reiniciar {
+    font-size: 16px;
+    background:#fff; color:#0b6623;
+    border:none; border-radius:20px;
+    padding:10px 20px; cursor:pointer; font-weight:bold;
+    display:none;
+    margin-bottom: 20px;
+  }
+
+  /* Boton y panel de "Mis equipos" */
+  .zona-registros { margin: 24px auto; max-width: 420px; }
+  #ver-registros {
+    font-size: 16px;
+    background:#044d19; color:#fff;
+    border:2px solid #fff; border-radius:20px;
+    padding:10px 22px; cursor:pointer; font-weight:bold;
+  }
+  #registros { display:none; margin-top: 14px; }
+  .reg-equipo {
+    background: rgba(255,255,255,.95);
+    color:#222;
+    border-radius: 12px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    text-align: left;
+    box-shadow: 0 3px 8px rgba(0,0,0,.3);
+  }
+  .reg-cabecera { font-weight:bold; color:#0b6623; margin-bottom:6px; }
+  .reg-lista { display:flex; flex-wrap:wrap; gap:6px; }
+  .reg-jug {
+    background:#f0f0f0;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 13px;
+  }
+  #borrar-registros {
+    font-size: 14px;
+    background:#c0392b; color:#fff;
+    border:none; border-radius:16px;
+    padding:8px 16px; cursor:pointer; font-weight:bold;
+    margin-top: 4px;
+  }
+
+  /* Confeti de celebracion al completar el equipo */
+  #confeti {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none; /* no molesta al hacer clic */
+    overflow: hidden;
+    z-index: 999;
+  }
+  .confeti-pieza {
+    position: absolute;
+    top: -20px;
+    width: 10px; height: 14px;
+    border-radius: 2px;
+    animation: caer linear forwards;
+  }
+  @keyframes caer {
+    0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(105vh) rotate(720deg); opacity: 1; }
+  }
+
+  /* Catalogo: ver todos los jugadores de una posicion */
+  .zona-catalogo { margin: 24px auto; max-width: 660px; }
+  .botones-pos {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 8px; margin-bottom: 12px;
+  }
+  .btn-pos {
+    font-size: 15px; font-weight: bold;
+    color: #0b6623; background: #fff;
+    border: 2px solid #fff; border-radius: 20px;
+    padding: 8px 14px; cursor: pointer;
+  }
+  .btn-pos.activa { background: #ffdd33; color: #0b6623; }
+  #lista-jugadores {
+    display: flex; flex-wrap: wrap;
+    justify-content: center; gap: 12px;
+  }
+  #lista-jugadores .carta { cursor: default; }
+  #buscador {
+    width: 90%; max-width: 320px;
+    font-size: 15px; padding: 9px 14px; margin-bottom: 12px;
+    border: 2px solid #fff; border-radius: 20px;
+    background: rgba(255,255,255,.92); color: #222; outline: none;
+    font-family: inherit;
+  }
+  .pos-tag {
+    display: inline-block; margin-top: 4px;
+    background: #0b6623; color: #fff;
+    border-radius: 10px; padding: 1px 8px; font-size: 11px;
+  }
+  /* Cromo especial: brilla y lleva etiqueta */
+  .carta.cromo-especial {
+    background-size: 200% auto !important;
+    animation: brillo 3s linear infinite;
+    border: 3px solid #fff;
+  }
+  /* Cuando un cromo especial ENTRA (al buscar): hace el saltito Y brilla a la vez */
+  .carta.animar.cromo-especial {
+    animation: aparecer .5s ease-out backwards, brillo 3s linear infinite;
+  }
+  .cromo-badge {
+    display: inline-block; margin-top: 4px;
+    background: rgba(0,0,0,.6); color: #fff;
+    border-radius: 10px; padding: 1px 8px; font-size: 11px; font-weight: bold;
+  }
+</style>
+
+<div id="confeti"></div>
+
+<div id="usuario-box">
+  <div class="usuario-fila">
+    <span>👤</span>
+    <input id="usuario-input" type="text" maxlength="16" placeholder="Tu nombre">
+  </div>
+  <div id="usuario-titulo"></div>
+  <div id="monedas-box">🪙 0</div>
+</div>
+
+<button id="btn-home">🏠 Menú</button>
+
+<div id="portada">
+  <div id="carta-messi"></div>
+  <div id="carta-cr7"></div>
+  <div id="carta-haaland"></div>
+  <div id="carta-mbappe"></div>
+  <div class="portada-caja">
+    <div class="portada-titulo">⚽ DREAM ⚽</div>
+    <div class="portada-sub">Crea tu 11 de ensueño</div>
+    <div id="portada-usuario"></div>
+    <div class="portada-botones">
+      <button id="btn-jugar">▶️ Jugar</button>
+      <button id="btn-portada-equipos">📋 Mis equipos</button>
+      <button id="btn-portada-misiones">🎯 Misiones</button>
+    </div>
+  </div>
+</div>
+
+<h1>⚽ Crea tu 11 del Mundial 2026 ⚽</h1>
+<p class="subtitulo" id="subtitulo">Pulsa el botón, salen 4 jugadores y eliges el mejor. ¡11 veces para completar tu equipo!</p>
+
+<div class="vitrina">
+  <div class="vitrina-titulo">🎁 Tus títulos</div>
+  <div id="decoracion" class="colapsado"></div>
+  <button id="toggle-titulos">▼ Mostrar más</button>
+</div>
+<div id="premio-exclusivo">🌈🐐 ¡G.O.A.T! 🐐🌈</div>
+<div id="reto-diario"></div>
+<div id="toast-mision"></div>
+
+<div id="sobre-overlay">
+  <div id="sobre-card">
+    <div id="sobre-contenido"></div>
+    <button id="sobre-cerrar">✖️ Cerrar</button>
+  </div>
+</div>
+<div id="sobre-flash"></div>
+
+<div id="celebra-misiones" class="celebra-overlay">
+  <div class="celebra-caja celebra-oro">
+    <div class="celebra-emoji celebra-bounce">🏆</div>
+    <div class="celebra-titulo">¡TODAS LAS MISIONES COMPLETADAS!</div>
+    <div class="celebra-sub">¡Eres 🐐 G.O.A.T · 60/60!</div>
+    <button class="celebra-btn" data-cierra="celebra-misiones">¡Genial! 🎉</button>
+  </div>
+</div>
+
+<div id="celebra-coleccion" class="celebra-overlay">
+  <div class="celebra-caja celebra-arcoiris">
+    <div class="celebra-emoji celebra-girar">📖</div>
+    <div class="celebra-titulo">¡ÁLBUM COMPLETO!</div>
+    <div class="celebra-sub">¡Has conseguido las 82 cartas especiales! 🎴✨</div>
+    <button class="celebra-btn" data-cierra="celebra-coleccion">¡Increíble! 🌈</button>
+  </div>
+</div>
+
+<div id="tarjeta-overlay">
+  <div id="tarjeta-card">
+    <div id="tarjeta-contenido"></div>
+    <div class="tarjeta-botones">
+      <button id="tarjeta-imprimir">🖨️ Imprimir / Guardar</button>
+      <button id="tarjeta-cerrar">✖️ Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modos">
+  <button class="btn-modo activa" data-modo="actual">⚽ Mundial 2026</button>
+  <button class="btn-modo" data-modo="pasado">🕰️ Viaje al pasado futbolístico</button>
+</div>
+
+<div class="formaciones">
+  <span class="titulo-f">Formación:</span>
+  <button class="btn-formacion" data-f="4-3-3">4-3-3</button>
+  <button class="btn-formacion" data-f="4-4-2">4-4-2</button>
+  <button class="btn-formacion" data-f="3-5-2">3-5-2</button>
+  <button class="btn-formacion" data-f="3-4-3">3-4-3</button>
+  <button class="btn-formacion" data-f="5-3-2">5-3-2</button>
+  <button class="btn-formacion" data-f="4-2-4">4-2-4</button>
+  <button class="btn-formacion" data-f="5-4-1">5-4-1</button>
+  <button class="btn-formacion" data-f="4-5-1">4-5-1</button>
+  <button class="btn-formacion" data-f="3-6-1">3-6-1</button>
+  <button class="btn-formacion" data-f="5-2-3">5-2-3</button>
+</div>
+
+<div class="extras">
+  <button id="btn-versus" class="btn-extra">🆚 1 contra 1: OFF</button>
+  <button id="btn-maquina" class="btn-extra">🤖 vs Máquina: OFF</button>
+  <button id="btn-dificil" class="btn-extra">🎲 Dificultad: Fácil</button>
+</div>
+
+<div id="turno-versus"></div>
+
+<div class="barra">Elegidos: <span id="contador">0</span> / 11</div>
+<br>
+<button id="boton">🔎 ¡Buscar jugadores!</button>
+<div class="posicion-buscada" id="posicion-buscada"></div>
+
+<div id="cartas"></div>
+
+<div id="mensaje-final"></div>
+<button id="reiniciar">🔄 Jugar otra vez</button>
+
+<h3 style="margin-bottom:8px;">Tu plantilla</h3>
+<div id="campo"></div>
+
+<div class="zona-registros">
+  <button id="ver-registros">📋 Ver mis equipos (0)</button>
+  <div id="registros"></div>
+</div>
+
+<div class="zona-misiones">
+  <button id="ver-misiones">🎯 Misiones (0/100)</button>
+  <div id="misiones-panel"></div>
+</div>
+
+<div class="zona-tienda">
+  <button id="ver-tienda">🛒 Tienda de sobres</button>
+  <div id="tienda-panel"></div>
+</div>
+
+<div class="zona-album">
+  <button id="ver-album">📖 Mi colección (0/120)</button>
+  <div id="album-panel"></div>
+</div>
+
+<div class="zona-catalogo">
+  <h3 style="margin-bottom:10px;">👀 Ver todos los jugadores</h3>
+  <input id="buscador" type="text" placeholder="🔎 Buscar jugador por nombre...">
+  <div class="botones-pos">
+    <button class="btn-pos" data-pos="POR">🧤 Porteros</button>
+    <button class="btn-pos" data-pos="DFC">🛡️ Defensas centrales</button>
+    <button class="btn-pos" data-pos="LI">⬅️ Laterales izq.</button>
+    <button class="btn-pos" data-pos="LD">➡️ Laterales der.</button>
+    <button class="btn-pos" data-pos="MCD">🧱 Pivotes</button>
+    <button class="btn-pos" data-pos="MC">🎯 Medios</button>
+    <button class="btn-pos" data-pos="MCO">✨ Mediapuntas</button>
+    <button class="btn-pos" data-pos="DC">⚡ Delanteros centro</button>
+    <button class="btn-pos" data-pos="EI">⬅️ Extremos izq.</button>
+    <button class="btn-pos" data-pos="ED">➡️ Extremos der.</button>
+  </div>
+  <div id="lista-jugadores"></div>
+</div>
+
+<br>
+
+<script>
+  // ===== Los colores de la bandera de cada seleccion =====
+  const coloresPais = {
+    "España":         "linear-gradient(135deg,#c60b1e,#ffc400,#c60b1e)",
+    "Francia":        "linear-gradient(135deg,#0055a4,#ffffff,#ef4135)",
+    "Brasil":         "linear-gradient(135deg,#009c3b,#ffdf00)",
+    "Argentina":      "linear-gradient(135deg,#75aadb,#ffffff,#75aadb)",
+    "Alemania":       "linear-gradient(135deg,#000000,#dd0000,#ffce00)",
+    "Italia":         "linear-gradient(135deg,#008c45,#ffffff,#cd212a)",
+    "Portugal":       "linear-gradient(135deg,#006600,#ff0000)",
+    "Inglaterra":     "linear-gradient(135deg,#ffffff,#cf142b)",
+    "Escocia":        "linear-gradient(135deg,#005eb8,#ffffff)",
+    "Bélgica":        "linear-gradient(135deg,#000000,#fdda24,#ef3340)",
+    "Marruecos":      "linear-gradient(135deg,#c1272d,#006233)",
+    "Países Bajos":   "linear-gradient(135deg,#ae1c28,#ffffff,#21468b)",
+    "Uruguay":        "linear-gradient(135deg,#7bafd4,#ffffff,#7bafd4)",
+    "Croacia":        "linear-gradient(135deg,#ff0000,#ffffff,#171796)",
+    "Noruega":        "linear-gradient(135deg,#ba0c2f,#ffffff,#00205b)",
+    "Nigeria":        "linear-gradient(135deg,#008751,#ffffff,#008751)",
+    "Georgia":        "linear-gradient(135deg,#ffffff,#ff0000)",
+    "Suecia":         "linear-gradient(135deg,#006aa7,#fecc00)",
+    "Egipto":         "linear-gradient(135deg,#ce1126,#ffffff,#000000)",
+    "Corea del Sur":  "linear-gradient(135deg,#ffffff,#cd2e3a,#0047a0)",
+    "Ghana":          "linear-gradient(135deg,#ce1126,#fcd116,#006b3f)",
+    "Senegal":        "linear-gradient(135deg,#00853f,#fdef42,#e31b23)",
+    "Suiza":          "linear-gradient(135deg,#d52b1e,#ffffff)",
+    "Eslovenia":      "linear-gradient(135deg,#ffffff,#0000ff,#ff0000)",
+    "Camerún":        "linear-gradient(135deg,#007a5e,#ce1126,#fcd116)",
+    "Estados Unidos": "linear-gradient(135deg,#b22234,#ffffff,#3c3b6e)",
+    "México":         "linear-gradient(135deg,#006847,#ffffff,#ce1126)",
+    "Dinamarca":      "linear-gradient(135deg,#c60c30,#ffffff)",
+    "Turquía":        "linear-gradient(135deg,#e30a17,#ffffff)",
+    "Hungría":        "linear-gradient(135deg,#ce2939,#ffffff,#477050)",
+    "Canadá":         "linear-gradient(135deg,#ff0000,#ffffff,#ff0000)",
+    "Rusia":          "linear-gradient(135deg,#ffffff,#0039a6,#d52b1e)",
+    "Irlanda":        "linear-gradient(135deg,#169b62,#ffffff,#ff883e)",
+    "Chequia":        "linear-gradient(135deg,#ffffff,#d7141a,#11457e)",
+    "Gales":          "linear-gradient(135deg,#00ab39,#ffffff,#c8102e)",
+    "Polonia":        "linear-gradient(135deg,#ffffff,#dc143c)",
+  };
+
+  // Saca el nombre del pais quitando la banderita del principio ("🇪🇸 España" -> "España")
+  function nombrePais(textoPais) {
+    return textoPais.split(" ").slice(1).join(" ");
+  }
+
+  // ===== Cromos especiales: fondos brillantes y etiquetas =====
+  const FONDOS_ESPECIALES = {
+    arcoiris: "linear-gradient(135deg,#ff5f6d,#ffc371,#47e891,#4facfe,#c86dd7)",
+    rubi:     "linear-gradient(135deg,#a1000a,#e0245e,#ff5b7f)",
+    oro:      "linear-gradient(135deg,#b8860b,#ffd700,#fff3b0)",
+    diamante: "linear-gradient(135deg,#7fdbff,#b5f5ff,#e8fbff)",
+    cosmico:  "linear-gradient(135deg,#2b1055,#7597de,#c86dd7)",
+    magico:   "linear-gradient(135deg,#6a00f4,#c77dff,#ff8fab)",
+    fiesta:   "linear-gradient(135deg,#f72585,#ffbe0b,#3a86ff)",
+  };
+  const ETIQUETA_TIPO = {
+    arcoiris:"🌈 Arcoíris", rubi:"❤️‍🔥 Rubí", oro:"🥇 Oro", diamante:"💠 Diamante",
+    cosmico:"👑 Cósmico", magico:"🪄 Mágico", fiesta:"🎉 Fiesta",
+  };
+  // Fondo de un cromo: especial si tiene "tipo", si no el color de su bandera
+  function fondoCromo(jug) {
+    if (jug.tipo && FONDOS_ESPECIALES[jug.tipo]) return FONDOS_ESPECIALES[jug.tipo];
+    return coloresPais[nombrePais(jug.p)] || "";
+  }
+  // HTML interior de un cromo estilo FIFA (puntuacion, posicion, bandera, foto y nombre)
+  function contenidoCromo(jug, pos) {
+    const bandera = jug.p.split(" ")[0]; // la banderita
+    const badge = jug.tipo ? `<div class="cromo-badge">${ETIQUETA_TIPO[jug.tipo]}</div>` : "";
+    return `<div class="contenido fifa">
+      <div class="fifa-top">
+        <div class="fifa-topleft">
+          <div class="fifa-rating">${jug.m}</div>
+          <div class="fifa-pos">${pos || ""}</div>
+        </div>
+        <div class="fifa-flag">${bandera}</div>
+      </div>
+      <div class="fifa-foto">${jug.e}</div>
+      <div class="fifa-nombre">${jug.n}</div>
+      ${badge}
+    </div>`;
+  }
+
+  // ===== La lista de jugadores (como una caja de cromos) =====
+  // Cada jugador tiene nombre, pais, media (puntuacion) y un emoji.
+  const jugadores = {
+    POR: [
+      {n:"Courtois", p:"🇧🇪 Bélgica", m:90, e:"🧤"},
+      {n:"Alisson", p:"🇧🇷 Brasil", m:89, e:"🧤"},
+      {n:"Donnarumma", p:"🇮🇹 Italia", m:88, e:"🧤"},
+      {n:"Bono", p:"🇲🇦 Marruecos", m:86, e:"🧤"},
+      {n:"E. Martínez", p:"🇦🇷 Argentina", m:87, e:"🧤"},
+      {n:"Maignan", p:"🇫🇷 Francia", m:87, e:"🧤"},
+      {n:"Ederson", p:"🇧🇷 Brasil", m:87, e:"🧤"},
+      {n:"Ter Stegen", p:"🇩🇪 Alemania", m:88, e:"🧤"},
+      {n:"Neuer", p:"🇩🇪 Alemania", m:86, e:"🧤"},
+      {n:"Oblak", p:"🇸🇮 Eslovenia", m:87, e:"🧤"},
+      {n:"Onana", p:"🇨🇲 Camerún", m:84, e:"🧤"},
+      {n:"Pickford", p:"🏴 Inglaterra", m:85, e:"🧤"},
+      {n:"Sommer", p:"🇨🇭 Suiza", m:84, e:"🧤"},
+      {n:"Unai Simón", p:"🇪🇸 España", m:85, e:"🧤"},
+      {n:"Diogo Costa", p:"🇵🇹 Portugal", m:85, e:"🧤"},
+      {n:"Livaković", p:"🇭🇷 Croacia", m:83, e:"🧤"},
+      {n:"Vicario", p:"🇮🇹 Italia", m:83, e:"🧤"},
+      {n:"Meret", p:"🇮🇹 Italia", m:82, e:"🧤"},
+      {n:"Raya", p:"🇪🇸 España", m:84, e:"🧤"},
+      {n:"Verbruggen", p:"🇳🇱 Países Bajos", m:82, e:"🧤"},
+      {n:"Kobel", p:"🇨🇭 Suiza", m:83, e:"🧤"},
+      {n:"Schmeichel", p:"🇩🇰 Dinamarca", m:82, e:"🧤"},
+      {n:"Ochoa", p:"🇲🇽 México", m:80, e:"🧤"},
+      {n:"Turner", p:"🇺🇸 Estados Unidos", m:79, e:"🧤"},
+    ],
+    DFC: [
+      {n:"Van Dijk", p:"🇳🇱 Países Bajos", m:92, e:"🛡️"},
+      {n:"Rúben Dias", p:"🇵🇹 Portugal", m:91, e:"🛡️"},
+      {n:"Saliba", p:"🇫🇷 Francia", m:90, e:"🛡️"},
+      {n:"Marquinhos", p:"🇧🇷 Brasil", m:90, e:"🛡️"},
+      {n:"Rüdiger", p:"🇩🇪 Alemania", m:90, e:"🛡️"},
+      {n:"Militão", p:"🇧🇷 Brasil", m:89, e:"🛡️"},
+      {n:"Bastoni", p:"🇮🇹 Italia", m:89, e:"🛡️"},
+      {n:"Stones", p:"🏴 Inglaterra", m:89, e:"🛡️"},
+      {n:"Araújo", p:"🇺🇾 Uruguay", m:89, e:"🛡️"},
+      {n:"De Ligt", p:"🇳🇱 Países Bajos", m:89, e:"🛡️"},
+      {n:"C. Romero", p:"🇦🇷 Argentina", m:89, e:"🛡️"},
+      {n:"Cubarsí", p:"🇪🇸 España", m:88, e:"🛡️"},
+      {n:"Tah", p:"🇩🇪 Alemania", m:88, e:"🛡️"},
+      {n:"Konaté", p:"🇫🇷 Francia", m:88, e:"🛡️"},
+      {n:"L. Martínez", p:"🇦🇷 Argentina", m:88, e:"🛡️"},
+      {n:"Bremer", p:"🇧🇷 Brasil", m:88, e:"🛡️"},
+      {n:"Le Normand", p:"🇪🇸 España", m:87, e:"🛡️"},
+      {n:"Koulibaly", p:"🇸🇳 Senegal", m:87, e:"🛡️"},
+      {n:"Schlotterbeck", p:"🇩🇪 Alemania", m:87, e:"🛡️"},
+    ],
+    LI: [
+      {n:"Gvardiol", p:"🇭🇷 Croacia", m:90, e:"🛡️"},
+      {n:"Theo Hernández", p:"🇫🇷 Francia", m:89, e:"🛡️"},
+      {n:"Nuno Mendes", p:"🇵🇹 Portugal", m:89, e:"🛡️"},
+      {n:"Davies", p:"🇨🇦 Canadá", m:88, e:"🛡️"},
+      {n:"Robertson", p:"🏴 Escocia", m:88, e:"🛡️"},
+      {n:"Grimaldo", p:"🇪🇸 España", m:88, e:"🛡️"},
+      {n:"Calafiori", p:"🇮🇹 Italia", m:87, e:"🛡️"},
+    ],
+    LD: [
+      {n:"Hakimi", p:"🇲🇦 Marruecos", m:90, e:"🛡️"},
+      {n:"Koundé", p:"🇫🇷 Francia", m:89, e:"🛡️"},
+      {n:"Carvajal", p:"🇪🇸 España", m:89, e:"🛡️"},
+      {n:"Alexander-Arnold", p:"🏴 Inglaterra", m:89, e:"🛡️"},
+      {n:"Walker", p:"🏴 Inglaterra", m:88, e:"🛡️"},
+      {n:"Dumfries", p:"🇳🇱 Países Bajos", m:87, e:"🛡️"},
+    ],
+    MCD: [
+      {n:"Rodri", p:"🇪🇸 España", m:91, e:"🧱"},
+      {n:"Rice", p:"🏴 Inglaterra", m:87, e:"🧱"},
+      {n:"Kimmich", p:"🇩🇪 Alemania", m:87, e:"🧱"},
+      {n:"Tchouaméni", p:"🇫🇷 Francia", m:86, e:"🧱"},
+      {n:"Bruno Guimarães", p:"🇧🇷 Brasil", m:86, e:"🧱"},
+      {n:"Zubimendi", p:"🇪🇸 España", m:85, e:"🧱"},
+      {n:"Palhinha", p:"🇵🇹 Portugal", m:84, e:"🧱"},
+      {n:"Amrabat", p:"🇲🇦 Marruecos", m:83, e:"🧱"},
+    ],
+    MC: [
+      {n:"Bellingham", p:"🏴 Inglaterra", m:91, e:"🎯"},
+      {n:"Pedri", p:"🇪🇸 España", m:91, e:"🎯"},
+      {n:"Valverde", p:"🇺🇾 Uruguay", m:89, e:"🎯"},
+      {n:"De Jong", p:"🇳🇱 Países Bajos", m:88, e:"🎯"},
+      {n:"Mac Allister", p:"🇦🇷 Argentina", m:87, e:"🎯"},
+      {n:"Enzo Fernández", p:"🇦🇷 Argentina", m:87, e:"🎯"},
+      {n:"Vitinha", p:"🇵🇹 Portugal", m:87, e:"🎯"},
+      {n:"Barella", p:"🇮🇹 Italia", m:87, e:"🎯"},
+      {n:"Gavi", p:"🇪🇸 España", m:86, e:"🎯"},
+      {n:"Camavinga", p:"🇫🇷 Francia", m:86, e:"🎯"},
+      {n:"Modrić", p:"🇭🇷 Croacia", m:86, e:"🎯"},
+      {n:"Fabián Ruiz", p:"🇪🇸 España", m:86, e:"🎯"},
+      {n:"Reijnders", p:"🇳🇱 Países Bajos", m:85, e:"🎯"},
+    ],
+    MCO: [
+      {n:"De Bruyne", p:"🇧🇪 Bélgica", m:91, e:"✨"},
+      {n:"Bruno Fernandes", p:"🇵🇹 Portugal", m:90, e:"✨"},
+      {n:"Musiala", p:"🇩🇪 Alemania", m:90, e:"✨"},
+      {n:"Foden", p:"🏴 Inglaterra", m:90, e:"✨"},
+      {n:"Olise", p:"🇫🇷 Francia", m:90, e:"✨"},
+      {n:"Cole Palmer", p:"🏴 Inglaterra", m:90, e:"✨"},
+      {n:"Wirtz", p:"🇩🇪 Alemania", m:89, e:"✨"},
+      {n:"Bernardo Silva", p:"🇵🇹 Portugal", m:89, e:"✨"},
+      {n:"Ødegaard", p:"🇳🇴 Noruega", m:88, e:"✨"},
+      {n:"Xavi Simons", p:"🇳🇱 Países Bajos", m:87, e:"✨"},
+      {n:"Szoboszlai", p:"🇭🇺 Hungría", m:87, e:"✨"},
+      {n:"Olmo", p:"🇪🇸 España", m:87, e:"✨"},
+      {n:"Arda Güler", p:"🇹🇷 Turquía", m:86, e:"✨"},
+    ],
+    DC: [
+      {n:"Haaland", p:"🇳🇴 Noruega", m:94, e:"💥"},
+      {n:"Lewandowski", p:"🇵🇱 Polonia", m:91, e:"🔥"},
+      {n:"Kane", p:"🏴 Inglaterra", m:90, e:"🎯"},
+      {n:"Lautaro", p:"🇦🇷 Argentina", m:88, e:"🔥"},
+      {n:"Osimhen", p:"🇳🇬 Nigeria", m:88, e:"🔥"},
+      {n:"Griezmann", p:"🇫🇷 Francia", m:87, e:"🎯"},
+      {n:"Julián Álvarez", p:"🇦🇷 Argentina", m:87, e:"🔥"},
+      {n:"Cristiano Ronaldo", p:"🇵🇹 Portugal", m:95, e:"🐐"},
+      {n:"Gyökeres", p:"🇸🇪 Suecia", m:86, e:"💥"},
+      {n:"Isak", p:"🇸🇪 Suecia", m:86, e:"🔥"},
+      {n:"Núñez", p:"🇺🇾 Uruguay", m:84, e:"🔥"},
+      {n:"Endrick", p:"🇧🇷 Brasil", m:84, e:"🌟"},
+      {n:"Morata", p:"🇪🇸 España", m:84, e:"🔥"},
+      {n:"Kolo Muani", p:"🇫🇷 Francia", m:84, e:"🔥"},
+      {n:"Marmoush", p:"🇪🇬 Egipto", m:84, e:"🔥"},
+      {n:"Cunha", p:"🇧🇷 Brasil", m:83, e:"🔥"},
+      {n:"Højlund", p:"🇩🇰 Dinamarca", m:82, e:"💥"},
+    ],
+    EI: [
+      {n:"Mbappé", p:"🇫🇷 Francia", m:94, e:"⚡"},
+      {n:"Vinícius Jr", p:"🇧🇷 Brasil", m:90, e:"🌟"},
+      {n:"Neymar", p:"🇧🇷 Brasil", m:93, e:"🌟"},
+      {n:"Nico Williams", p:"🇪🇸 España", m:90, e:"⚡"},
+      {n:"Rafael Leão", p:"🇵🇹 Portugal", m:88, e:"⚡"},
+      {n:"Kvaratskhelia", p:"🇬🇪 Georgia", m:88, e:"✨"},
+      {n:"Son", p:"🇰🇷 Corea del Sur", m:88, e:"⚡"},
+      {n:"Pulisic", p:"🇺🇸 Estados Unidos", m:87, e:"⚡"},
+      {n:"Doku", p:"🇧🇪 Bélgica", m:86, e:"⚡"},
+      {n:"Gakpo", p:"🇳🇱 Países Bajos", m:86, e:"🌟"},
+      {n:"Ferran Torres", p:"🇪🇸 España", m:85, e:"🎯"},
+    ],
+    ED: [
+      {n:"Messi", p:"🇦🇷 Argentina", m:97, e:"🐐"},
+      {n:"Lamine Yamal", p:"🇪🇸 España", m:92, e:"✨"},
+      {n:"Salah", p:"🇪🇬 Egipto", m:91, e:"🌟"},
+      {n:"Rodrygo", p:"🇧🇷 Brasil", m:88, e:"🌟"},
+      {n:"Saka", p:"🏴 Inglaterra", m:87, e:"⚡"},
+      {n:"Dembélé", p:"🇫🇷 Francia", m:87, e:"⚡"},
+      {n:"Kudus", p:"🇬🇭 Ghana", m:84, e:"✨"},
+    ],
+  };
+
+  // ===== Modo "Viaje al pasado": leyendas retiradas del futbol =====
+  const leyendas = {
+    POR: [
+      {n:"Buffon", p:"🇮🇹 Italia", m:93, e:"🧤"},
+      {n:"Yashin", p:"🇷🇺 Rusia", m:92, e:"🧤"},
+      {n:"Casillas", p:"🇪🇸 España", m:91, e:"🧤"},
+      {n:"Kahn", p:"🇩🇪 Alemania", m:91, e:"🧤"},
+      {n:"Zoff", p:"🇮🇹 Italia", m:90, e:"🧤"},
+      {n:"P. Schmeichel", p:"🇩🇰 Dinamarca", m:90, e:"🧤"},
+      {n:"Van der Sar", p:"🇳🇱 Países Bajos", m:89, e:"🧤"},
+      {n:"Taffarel", p:"🇧🇷 Brasil", m:86, e:"🧤"},
+      {n:"Čech", p:"🇨🇿 Chequia", m:89, e:"🧤"},
+    ],
+    DFC: [
+      {n:"Beckenbauer", p:"🇩🇪 Alemania", m:95, e:"🛡️"},
+      {n:"Baresi", p:"🇮🇹 Italia", m:93, e:"🛡️"},
+      {n:"Cannavaro", p:"🇮🇹 Italia", m:91, e:"🛡️"},
+      {n:"Nesta", p:"🇮🇹 Italia", m:91, e:"🛡️"},
+      {n:"Puyol", p:"🇪🇸 España", m:90, e:"🛡️"},
+      {n:"Passarella", p:"🇦🇷 Argentina", m:89, e:"🛡️"},
+      {n:"Ferdinand", p:"🏴 Inglaterra", m:89, e:"🛡️"},
+      {n:"Stam", p:"🇳🇱 Países Bajos", m:88, e:"🛡️"},
+      {n:"Desailly", p:"🇫🇷 Francia", m:88, e:"🛡️"},
+      {n:"Hierro", p:"🇪🇸 España", m:88, e:"🛡️"},
+      {n:"Terry", p:"🏴 Inglaterra", m:89, e:"🛡️"},
+      {n:"W. Samuel", p:"🇦🇷 Argentina", m:88, e:"🛡️"},
+      {n:"Lúcio", p:"🇧🇷 Brasil", m:87, e:"🛡️"},
+    ],
+    LI: [
+      {n:"Maldini", p:"🇮🇹 Italia", m:94, e:"🛡️"},
+      {n:"Roberto Carlos", p:"🇧🇷 Brasil", m:93, e:"🛡️"},
+      {n:"Nilton Santos", p:"🇧🇷 Brasil", m:90, e:"🛡️"},
+      {n:"Ashley Cole", p:"🏴 Inglaterra", m:88, e:"🛡️"},
+      {n:"Lizarazu", p:"🇫🇷 Francia", m:87, e:"🛡️"},
+      {n:"Junior", p:"🇧🇷 Brasil", m:87, e:"🛡️"},
+      {n:"Zambrotta", p:"🇮🇹 Italia", m:85, e:"🛡️"},
+    ],
+    LD: [
+      {n:"Cafú", p:"🇧🇷 Brasil", m:92, e:"🛡️"},
+      {n:"Lahm", p:"🇩🇪 Alemania", m:90, e:"🛡️"},
+      {n:"Dani Alves", p:"🇧🇷 Brasil", m:90, e:"🛡️"},
+      {n:"Zanetti", p:"🇦🇷 Argentina", m:89, e:"🛡️"},
+      {n:"Thuram", p:"🇫🇷 Francia", m:89, e:"🛡️"},
+      {n:"Djalma Santos", p:"🇧🇷 Brasil", m:88, e:"🛡️"},
+      {n:"Maicon", p:"🇧🇷 Brasil", m:86, e:"🛡️"},
+    ],
+    MCD: [
+      {n:"Vieira", p:"🇫🇷 Francia", m:90, e:"🧱"},
+      {n:"Makélélé", p:"🇫🇷 Francia", m:89, e:"🧱"},
+      {n:"Redondo", p:"🇦🇷 Argentina", m:89, e:"🧱"},
+      {n:"Roy Keane", p:"🇮🇪 Irlanda", m:89, e:"🧱"},
+      {n:"Gattuso", p:"🇮🇹 Italia", m:87, e:"🧱"},
+      {n:"Mascherano", p:"🇦🇷 Argentina", m:87, e:"🧱"},
+      {n:"Rijkaard", p:"🇳🇱 Países Bajos", m:90, e:"🧱"},
+      {n:"Davids", p:"🇳🇱 Países Bajos", m:88, e:"🧱"},
+      {n:"Xabi Alonso", p:"🇪🇸 España", m:90, e:"🧱"},
+      {n:"Essien", p:"🇬🇭 Ghana", m:85, e:"🧱"},
+    ],
+    MC: [
+      {n:"Xavi", p:"🇪🇸 España", m:93, e:"🎯"},
+      {n:"Iniesta", p:"🇪🇸 España", m:93, e:"🎯"},
+      {n:"Matthäus", p:"🇩🇪 Alemania", m:91, e:"🎯"},
+      {n:"Pirlo", p:"🇮🇹 Italia", m:90, e:"🎯"},
+      {n:"Gerrard", p:"🏴 Inglaterra", m:90, e:"🎯"},
+      {n:"Lampard", p:"🏴 Inglaterra", m:89, e:"🎯"},
+      {n:"Scholes", p:"🏴 Inglaterra", m:89, e:"🎯"},
+      {n:"Seedorf", p:"🇳🇱 Países Bajos", m:88, e:"🎯"},
+      {n:"Gullit", p:"🇳🇱 Países Bajos", m:92, e:"🎯"},
+      {n:"Ballack", p:"🇩🇪 Alemania", m:89, e:"🎯"},
+      {n:"Verón", p:"🇦🇷 Argentina", m:88, e:"🎯"},
+      {n:"Schweinsteiger", p:"🇩🇪 Alemania", m:88, e:"🎯"},
+    ],
+    MCO: [
+      {n:"Maradona", p:"🇦🇷 Argentina", m:99, e:"✨"},
+      {n:"Zidane", p:"🇫🇷 Francia", m:97, e:"✨"},
+      {n:"Ronaldinho", p:"🇧🇷 Brasil", m:97, e:"✨"},
+      {n:"Platini", p:"🇫🇷 Francia", m:93, e:"✨"},
+      {n:"Baggio", p:"🇮🇹 Italia", m:92, e:"✨"},
+      {n:"Zico", p:"🇧🇷 Brasil", m:92, e:"✨"},
+      {n:"Totti", p:"🇮🇹 Italia", m:91, e:"✨"},
+      {n:"Kaká", p:"🇧🇷 Brasil", m:91, e:"✨"},
+      {n:"Riquelme", p:"🇦🇷 Argentina", m:90, e:"✨"},
+      {n:"Rui Costa", p:"🇵🇹 Portugal", m:89, e:"✨"},
+      {n:"Cruyff", p:"🇳🇱 Países Bajos", m:97, e:"👑"},
+      {n:"Bergkamp", p:"🇳🇱 Países Bajos", m:92, e:"✨"},
+      {n:"Del Piero", p:"🇮🇹 Italia", m:91, e:"✨"},
+      {n:"Sneijder", p:"🇳🇱 Países Bajos", m:87, e:"✨"},
+    ],
+    DC: [
+      {n:"Pelé", p:"🇧🇷 Brasil", m:99, e:"👑"},
+      {n:"Ronaldo Nazário", p:"🇧🇷 Brasil", m:96, e:"🔥"},
+      {n:"Di Stéfano", p:"🇦🇷 Argentina", m:95, e:"🔥"},
+      {n:"Van Basten", p:"🇳🇱 Países Bajos", m:94, e:"🔥"},
+      {n:"Puskás", p:"🇭🇺 Hungría", m:94, e:"🔥"},
+      {n:"Eusébio", p:"🇵🇹 Portugal", m:94, e:"🔥"},
+      {n:"Romário", p:"🇧🇷 Brasil", m:93, e:"🔥"},
+      {n:"Gerd Müller", p:"🇩🇪 Alemania", m:93, e:"🔥"},
+      {n:"Henry", p:"🇫🇷 Francia", m:93, e:"🔥"},
+      {n:"Batistuta", p:"🇦🇷 Argentina", m:92, e:"🔥"},
+      {n:"Raúl", p:"🇪🇸 España", m:90, e:"🔥"},
+      {n:"Van Nistelrooy", p:"🇳🇱 Países Bajos", m:90, e:"🔥"},
+      {n:"Zlatan", p:"🇸🇪 Suecia", m:91, e:"🔥"},
+      {n:"Rooney", p:"🏴 Inglaterra", m:90, e:"🔥"},
+      {n:"Cantona", p:"🇫🇷 Francia", m:90, e:"🔥"},
+      {n:"Eto'o", p:"🇨🇲 Camerún", m:90, e:"🔥"},
+      {n:"Owen", p:"🏴 Inglaterra", m:89, e:"🔥"},
+      {n:"David Villa", p:"🇪🇸 España", m:88, e:"🔥"},
+    ],
+    EI: [
+      {n:"Ryan Giggs", p:"🏴 Gales", m:91, e:"⚡"},
+      {n:"Nedvěd", p:"🇨🇿 Chequia", m:91, e:"⚡"},
+      {n:"Overmars", p:"🇳🇱 Países Bajos", m:90, e:"⚡"},
+      {n:"Ginola", p:"🇫🇷 Francia", m:89, e:"⚡"},
+      {n:"Robinho", p:"🇧🇷 Brasil", m:88, e:"⚡"},
+      {n:"Zé Roberto", p:"🇧🇷 Brasil", m:88, e:"⚡"},
+      {n:"Rivaldo", p:"🇧🇷 Brasil", m:93, e:"⚡"},
+    ],
+    ED: [
+      {n:"Garrincha", p:"🇧🇷 Brasil", m:95, e:"⚡"},
+      {n:"Figo", p:"🇵🇹 Portugal", m:92, e:"⚡"},
+      {n:"Robben", p:"🇳🇱 Países Bajos", m:91, e:"⚡"},
+      {n:"Jairzinho", p:"🇧🇷 Brasil", m:90, e:"⚡"},
+      {n:"Beckham", p:"🏴 Inglaterra", m:89, e:"⚡"},
+      {n:"Park Ji-sung", p:"🇰🇷 Corea del Sur", m:88, e:"⚡"},
+    ],
+  };
+
+  let plantel = jugadores; // el plantel activo: jugadores (actual) o leyendas (pasado)
+
+  // Las formaciones (tacticas). Cada una tiene 1 portero y 10 jugadores mas.
+  // Orden: portero, luego defensas, medios y delanteros.
+  // EI = extremo izquierdo, DC = delantero centro, ED = extremo derecho.
+  // El orden en la delantera es EI (izquierda), DC (centro), ED (derecha).
+  const formaciones = {
+    "4-3-3": ["POR","LI","DFC","DFC","LD","MCD","MC","MCO","EI","DC","ED"],
+    "4-4-2": ["POR","LI","DFC","DFC","LD","MCD","MC","MC","MCO","DC","DC"],
+    "3-5-2": ["POR","DFC","DFC","DFC","MCD","MC","MC","MCO","MCO","DC","DC"],
+    "3-4-3": ["POR","DFC","DFC","DFC","MCD","MC","MC","MCO","EI","DC","ED"],
+    "5-3-2": ["POR","LI","DFC","DFC","DFC","LD","MCD","MC","MCO","DC","DC"],
+    "4-2-4": ["POR","LI","DFC","DFC","LD","MCD","MC","EI","DC","DC","ED"],
+    "5-4-1": ["POR","LI","DFC","DFC","DFC","LD","MCD","MC","MC","MCO","DC"],
+    "4-5-1": ["POR","LI","DFC","DFC","LD","MCD","MC","MC","MCO","MCO","DC"],
+    "3-6-1": ["POR","DFC","DFC","DFC","MCD","MCD","MC","MC","MCO","MCO","DC"],
+    "5-2-3": ["POR","LI","DFC","DFC","DFC","LD","MCD","MC","EI","DC","ED"],
+  };
+  let formacion = formaciones["4-3-3"]; // empezamos con 4-3-3
+  let formacionNombre = "4-3-3";        // el nombre de la formacion (para las misiones)
+  const nombrePos = {
+    POR:"Portero",
+    DFC:"Defensa", LI:"Lateral izq.", LD:"Lateral der.",
+    MCD:"Pivote", MC:"Medio", MCO:"Mediapunta",
+    DC:"Delantero", EI:"Extremo izq.", ED:"Extremo der."
+  };
+
+  let indice = 0;          // por que hueco vamos (0 a 10)
+  let plantilla = [];      // los jugadores ya elegidos
+  let ultimoColocado = -1; // el ultimo hueco que se lleno (para animarlo)
+
+  let dificil = false;     // modo dificil: los 4 cromos salen de nivel parecido
+  let versus = false;      // modo 1 contra 1 (dos jugadores)
+  let contraMaquina = false; // modo contra la maquina (1 jugador)
+  let turno = 1;           // en el modo 1 contra 1: de quien es el turno (1 o 2)
+  let equipo1 = null;      // equipo terminado del jugador 1
+  let equipo2 = null;      // equipo terminado del jugador 2
+
+  const boton = document.getElementById("boton");
+  const cartasDiv = document.getElementById("cartas");
+  const contador = document.getElementById("contador");
+  const posBuscada = document.getElementById("posicion-buscada");
+  const mensajeFinal = document.getElementById("mensaje-final");
+  const reiniciar = document.getElementById("reiniciar");
+
+  // Baraja una lista (mezclar el orden al azar)
+  function barajar(lista) {
+    const copia = lista.slice();
+    for (let i = copia.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copia[i], copia[j]] = [copia[j], copia[i]];
+    }
+    return copia;
+  }
+
+  // Devuelve 4 cromos para elegir
+  function sacarCuatro(lista) {
+    if (dificil && lista.length > 4) {
+      // Modo dificil: 4 jugadores de nivel parecido (sin un "mejor" obvio)
+      const ordenada = lista.slice().sort((a, b) => b.m - a.m);
+      const inicio = Math.floor(Math.random() * (ordenada.length - 3));
+      return barajar(ordenada.slice(inicio, inicio + 4));
+    }
+    // Modo facil: 4 al azar de toda la posicion
+    return barajar(lista).slice(0, 4);
+  }
+
+  // Dibuja el campo con los huecos
+  function dibujarCampo() {
+    const campo = document.getElementById("campo");
+    // Cada posicion va en una fila: 0 = delanteros (arriba) ... 3 = portero (abajo)
+    const filaDe = { EI:0, DC:0, ED:0, MCD:1, MC:1, MCO:1, LI:2, DFC:2, LD:2, POR:3 };
+    const filas = [[], [], [], []];
+    formacion.forEach((pos, i) => {
+      const elegido = plantilla[i];
+      let estiloCirculo = "";
+      let claseSalto = "";
+      if (elegido) {
+        // Pintamos el hueco con el fondo del jugador (especial o bandera)
+        const color = fondoCromo(elegido);
+        if (color) estiloCirculo = `style="background:${color};border:2px solid #fff;"`;
+        if (i === ultimoColocado) claseSalto = "plop"; // solo salta el recien colocado
+      }
+      filas[filaDe[pos]].push(`
+        <div class="hueco ${elegido ? "lleno" : ""}">
+          <div class="circulo ${claseSalto}" ${estiloCirculo}>${elegido ? elegido.e : "❓"}</div>
+          <div class="etiqueta">${elegido ? "<b>"+elegido.n+"</b>" : nombrePos[pos]}</div>
+        </div>`);
+    });
+    // Se dibuja de delanteros (arriba) a portero (abajo)
+    campo.innerHTML = filas.map(f => `<div class="linea">${f.join("")}</div>`).join("");
+  }
+
+  // Cuando pulsas el boton: saca 4 jugadores de la posicion que toca
+  function buscar() {
+    const pos = formacion[indice];
+    boton.disabled = true; // hay que elegir antes de volver a buscar
+    cartasDiv.innerHTML = "";
+    posBuscada.innerHTML = "🎴 Barajando cromos...";
+
+    // El boton tiembla mientras "busca"
+    boton.classList.add("buscando");
+    setTimeout(() => boton.classList.remove("buscando"), 500);
+
+    // Esperamos medio segundo y entonces aparecen los cromos con animacion
+    setTimeout(() => {
+      posBuscada.innerHTML = `Elige un <b>${nombrePos[pos]}</b> 👇`;
+      // Quitamos los jugadores que ya estan en la plantilla para que no se repitan
+      const disponibles = plantel[pos].filter(j => !plantilla.some(el => el && el.n === j.n));
+      const cuatro = sacarCuatro(disponibles);
+      cartasDiv.innerHTML = "";
+      cuatro.forEach((jug, i) => {
+        const carta = document.createElement("div");
+        carta.className = "carta animar" + (jug.tipo ? " cromo-especial" : "");
+        carta.style.animationDelay = (i * 0.15) + "s"; // cada cromo salta un poco despues
+        // Pintamos el cromo (fondo especial si es un cromo especial, si no la bandera)
+        const fondo = fondoCromo(jug);
+        if (fondo) carta.style.background = fondo;
+        carta.innerHTML = contenidoCromo(jug, pos);
+        carta.onclick = () => elegir(jug);
+        cartasDiv.appendChild(carta);
+      });
+    }, 500);
+  }
+
+  // Cuando eliges una carta
+  function elegir(jug) {
+    sonidoClic(); // ¡clic!
+    plantilla[indice] = jug;
+    ultimoColocado = indice; // recordamos en que hueco se acaba de colocar
+    indice++;
+    contador.textContent = indice;
+    cartasDiv.innerHTML = "";
+    posBuscada.innerHTML = "";
+    dibujarCampo();
+
+    if (indice >= 11) {
+      terminar();
+    } else {
+      boton.disabled = false;
+    }
+  }
+
+  // Al completar los 11
+  function terminar() {
+    boton.disabled = true;
+    boton.style.display = "none";
+    reiniciar.style.display = "inline-block";
+    const media = Math.round(plantilla.reduce((s,j) => s + j.m, 0) / 11);
+    sonidoGol();     // 🔊 ¡goool!
+    lanzarConfeti(); // 🎊
+    if (media > 93) sumarMonedas(60); // 🪙 bonus por un equipazo de +93 de media
+
+    if (contraMaquina) {
+      // La maquina arma su equipo y comparamos al instante
+      const cpuMedia = generarEquipoCPU();
+      let resultado;
+      if (media > cpuMedia)      resultado = "🎉 ¡Ganas tú!";
+      else if (cpuMedia > media) resultado = "🤖 ¡Gana la máquina!";
+      else                       resultado = "🤝 ¡Empate!";
+      mensajeFinal.innerHTML = `${resultado} <br>🧑 Tú: ★${media} · 🤖 Máquina: ★${cpuMedia}`;
+      reiniciar.textContent = "🔄 Jugar otra vez";
+      alCompletar(contextoMision(media, media > cpuMedia)); // ganar a la maquina cuenta como ganar un 1c1
+    } else if (versus) {
+      // Modo 1 contra 1
+      if (turno === 1) {
+        equipo1 = { media: media };
+        turno = 2;
+        document.getElementById("turno-versus").textContent = "🔴 Turno del Jugador 2";
+        mensajeFinal.innerHTML = `🔵 <b>Jugador 1</b>: media ★${media}. <br>¡Ahora arma el equipo del Jugador 2!`;
+        reiniciar.textContent = "➡️ ¡Turno del Jugador 2!";
+        alCompletar(contextoMision(media, false));
+      } else {
+        equipo2 = { media: media };
+        turno = 1; // preparado para otra partida
+        document.getElementById("turno-versus").textContent = "";
+        const m1 = equipo1.media, m2 = equipo2.media;
+        let resultado;
+        if (m1 > m2)      resultado = `🔵 ¡Gana el Jugador 1!`;
+        else if (m2 > m1) resultado = `🔴 ¡Gana el Jugador 2!`;
+        else              resultado = `🤝 ¡Empate!`;
+        mensajeFinal.innerHTML = `🏆 ${resultado} <br>Jugador 1: ★${m1} · Jugador 2: ★${m2}`;
+        reiniciar.textContent = "🔄 Jugar otra vez";
+        alCompletar(contextoMision(media, m1 !== m2)); // hay ganador => cuenta como "ganar un 1c1"
+      }
+    } else {
+      // Modo normal: media, MVP y química
+      const mvp = plantilla.reduce((a, b) => (b.m > a.m ? b : a));
+      const cuenta = {};
+      plantilla.forEach(j => { const p = nombrePais(j.p); cuenta[p] = (cuenta[p] || 0) + 1; });
+      const maxPais = Math.max.apply(null, Object.values(cuenta));
+      const quimica = maxPais >= 6 ? "🔥 Máxima" : maxPais >= 4 ? "💪 Alta" : maxPais >= 3 ? "👍 Media" : "Baja";
+      const bonus93 = media > 93 ? " <br>💰 ¡Equipazo! +60 🪙" : "";
+      mensajeFinal.innerHTML =
+        `🏆 ¡Plantilla completa! · Media <b>★ ${media}</b>` +
+        `<br>👑 MVP: <b>${mvp.e} ${mvp.n}</b> (★${mvp.m}) · 🔗 Química: ${quimica}` + bonus93;
+      reiniciar.textContent = "🔄 Jugar otra vez";
+      guardarEquipo(media); // guardamos este equipo en los registros
+      alCompletar(contextoMision(media, false));
+    }
+  }
+
+  // ===== Sonidos (se generan solos, sin archivos) =====
+  let audioCtx = null;
+  function tono(freq, duracion, tipo, cuando, volumen) {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = audioCtx.currentTime + (cuando || 0);
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = tipo || "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.linearRampToValueAtTime(volumen || 0.2, t0 + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duracion);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(t0); osc.stop(t0 + duracion);
+  }
+  function sonidoClic() {
+    try { tono(660, 0.12, "triangle", 0, 0.25); } catch (e) { /* sin sonido si el navegador lo bloquea */ }
+  }
+  function sonidoGol() {
+    try {
+      const notas = [523, 659, 784, 1047]; // do, mi, sol, do agudo: pequeña fanfarria
+      notas.forEach((f, i) => tono(f, 0.28, "sawtooth", i * 0.13, 0.22));
+    } catch (e) { /* sin sonido */ }
+  }
+
+  // ===== Confeti de celebracion =====
+  function lanzarConfeti() {
+    const cont = document.getElementById("confeti");
+    const colores = ["#ffd700","#ff4136","#2ecc40","#0074d9","#ff851b","#b10dc9","#ffffff"];
+    for (let i = 0; i < 90; i++) {
+      const pieza = document.createElement("div");
+      pieza.className = "confeti-pieza";
+      pieza.style.left = (Math.random() * 100) + "vw";           // sale desde un punto al azar
+      pieza.style.background = colores[Math.floor(Math.random() * colores.length)];
+      const duracion = 2 + Math.random() * 2;                    // cae en 2-4 segundos
+      pieza.style.animationDuration = duracion + "s";
+      pieza.style.animationDelay = (Math.random() * 0.6) + "s";  // no todas a la vez
+      cont.appendChild(pieza);
+      // Quitamos la pieza cuando termina, para no llenar la pagina
+      setTimeout(() => pieza.remove(), (duracion + 1) * 1000);
+    }
+  }
+
+  // ===== Registros: guardar y ver los equipos que haces =====
+  // Copia en memoria: por si el navegador bloquea el guardado en disco
+  // (pasa al abrir el archivo con doble clic en algunos navegadores como Safari).
+  let equiposEnMemoria = [];
+
+  function cargarEquipos() {
+    try {
+      const guardado = localStorage.getItem("misEquipos");
+      if (guardado) return JSON.parse(guardado);
+    } catch (e) { /* el navegador bloquea localStorage: usamos la copia en memoria */ }
+    return equiposEnMemoria;
+  }
+
+  function guardarEquipos(equipos) {
+    equiposEnMemoria = equipos; // siempre en memoria (funciona seguro durante la partida)
+    try {
+      localStorage.setItem("misEquipos", JSON.stringify(equipos)); // ademas en disco si se puede
+    } catch (e) { /* si el navegador lo bloquea, nos quedamos con la copia en memoria */ }
+  }
+
+  function guardarEquipo(media) {
+    const equipos = cargarEquipos();
+    // Pedimos un nombre para el equipo (si lo dejas vacio, le pone uno por defecto)
+    let nombre = "";
+    try { nombre = prompt("¿Cómo se llama tu equipo? ⚽", "Equipo " + (equipos.length + 1)); } catch (e) {}
+    if (!nombre) nombre = "Equipo " + (equipos.length + 1);
+    // Guardamos cada jugador con su posicion, y la fecha en que lo hiciste
+    const lista = plantilla.map((j, i) => ({ n:j.n, e:j.e, p:j.p, m:j.m, pos: formacion[i] }));
+    equipos.push({ nombre: nombre, fecha: new Date().toLocaleString("es-ES"), media: media, jugadores: lista });
+    guardarEquipos(equipos);
+    actualizarBotonRegistros();
+  }
+
+  function actualizarBotonRegistros() {
+    document.getElementById("ver-registros").textContent =
+      `📋 Ver mis equipos (${cargarEquipos().length})`;
+  }
+
+  function renderRegistros() {
+    const panel = document.getElementById("registros");
+    const equipos = cargarEquipos();
+    if (!equipos.length) {
+      panel.innerHTML = "<p>Todavía no has guardado ningún equipo. ¡Completa un 11! ⚽</p>";
+      return;
+    }
+    // La medalla 🥇 es para el equipo con la media mas alta
+    const mejorMedia = Math.max(...equipos.map(e => e.media));
+    panel.innerHTML = equipos.map((eq, idx) => {
+      const jugadoresHTML = eq.jugadores
+        .map(j => `<span class="reg-jug">${j.e} ${j.n}</span>`).join("");
+      const nombre = eq.nombre || ("Equipo " + (idx + 1));
+      const medalla = (eq.media === mejorMedia) ? "🥇 " : "🏆 ";
+      return `<div class="reg-equipo">
+        <div class="reg-cabecera">${medalla}${nombre} · Media ★ ${eq.media} · ${eq.fecha}
+          <button class="reg-tarjeta-btn" data-idx="${idx}">📸 Tarjeta</button>
+        </div>
+        <div class="reg-lista">${jugadoresHTML}</div>
+      </div>`;
+    }).join("") + `<button id="borrar-registros">🗑️ Borrar todos</button>`;
+
+    const borrar = document.getElementById("borrar-registros");
+    if (borrar) borrar.onclick = borrarRegistros;
+    panel.querySelectorAll(".reg-tarjeta-btn").forEach(b => {
+      b.onclick = () => verTarjeta(parseInt(b.dataset.idx, 10));
+    });
+  }
+
+  function toggleRegistros() {
+    const panel = document.getElementById("registros");
+    if (panel.style.display === "block") {
+      panel.style.display = "none";
+    } else {
+      renderRegistros();
+      panel.style.display = "block";
+    }
+  }
+
+  function borrarRegistros() {
+    if (!confirm("¿Seguro que quieres borrar todos tus equipos?")) return;
+    equiposEnMemoria = [];
+    try { localStorage.removeItem("misEquipos"); } catch (e) { /* ignorar si esta bloqueado */ }
+    actualizarBotonRegistros();
+    renderRegistros();
+  }
+
+  // ===== MISIONES: retos que dan premios para adornar el menu =====
+  const MISIONES = [
+    // Fáciles
+    { id:"f1", tier:"facil", texto:"Completa tu primer equipo", premio:"⭐", check:c => true },
+    { id:"f2", tier:"facil", texto:"Consigue un equipo de +80 de media", premio:"🎈", check:c => c.media > 80 },
+    { id:"f3", tier:"facil", texto:"Ficha a Messi o a Cristiano en tu equipo", premio:"🎩",
+      check:c => c.nombres.includes("Messi") || c.nombres.includes("Cristiano Ronaldo") },
+    { id:"f4", tier:"facil", texto:"Completa un equipo en el modo Mundial 2026", premio:"🎮", check:c => c.modo === "actual" },
+    { id:"f5", tier:"facil", texto:"Consigue un equipo de +82 de media", premio:"⚽", check:c => c.media > 82 },
+    { id:"f6", tier:"facil", texto:"Ficha a Mbappé o a Haaland", premio:"🚀",
+      check:c => c.nombres.includes("Mbappé") || c.nombres.includes("Haaland") },
+    { id:"f7", tier:"facil", texto:"Usa la formación 4-3-3", premio:"📋", check:c => c.formacion === "4-3-3" },
+    // Medias
+    { id:"m1", tier:"media", texto:"Consigue un equipo de +85 de media", premio:"🔥", check:c => c.media > 85 },
+    { id:"m2", tier:"media", texto:"Completa un 11 en el modo Viaje al pasado", premio:"🕰️", check:c => c.modo === "pasado" },
+    { id:"m3", tier:"media", texto:"Junta 3 jugadores del mismo país", premio:"🌍", check:c => c.maxMismoPais >= 3 },
+    { id:"m4", tier:"media", texto:"Consigue un equipo de +87 de media", premio:"💪", check:c => c.media > 87 },
+    { id:"m5", tier:"media", texto:"Junta 4 jugadores del mismo país", premio:"🌎", check:c => c.maxMismoPais >= 4 },
+    { id:"m6", tier:"media", texto:"Completa un equipo con la formación 4-2-4", premio:"⚔️", check:c => c.formacion === "4-2-4" },
+    { id:"m7", tier:"media", texto:"Ficha a Messi Y a Cristiano en el mismo equipo", premio:"🐐",
+      check:c => c.nombres.includes("Messi") && c.nombres.includes("Cristiano Ronaldo") },
+    // Difíciles
+    { id:"d1", tier:"dificil", texto:"Consigue un equipo de +90 de media", premio:"🏆", check:c => c.media > 90 },
+    { id:"d2", tier:"dificil", texto:"Gana una partida en el modo 1 contra 1", premio:"🥇", check:c => c.versusWin },
+    { id:"d3", tier:"dificil", texto:"Consigue un equipazo de +93 de media", premio:"👑", check:c => c.media > 93 },
+    { id:"d4", tier:"dificil", texto:"Consigue un equipazo de +92 de media", premio:"💎", check:c => c.media > 92 },
+    { id:"d5", tier:"dificil", texto:"Completa un equipo con la Dificultad en Difícil", premio:"🎲", check:c => c.dificil === true },
+    { id:"d6", tier:"dificil", texto:"Junta 6 jugadores del mismo país", premio:"🎽", check:c => c.maxMismoPais >= 6 },
+    // --- 10 misiones nuevas ---
+    { id:"f8", tier:"facil", texto:"Consigue un equipo de +78 de media", premio:"🍀", check:c => c.media > 78 },
+    { id:"f9", tier:"facil", texto:"Usa la formación 4-4-2", premio:"🧩", check:c => c.formacion === "4-4-2" },
+    { id:"f10", tier:"facil", texto:"Ficha a Lamine Yamal o a Pedri", premio:"🌱",
+      check:c => c.nombres.includes("Lamine Yamal") || c.nombres.includes("Pedri") },
+    { id:"m8", tier:"media", texto:"Consigue un equipo de +88 de media", premio:"💫", check:c => c.media > 88 },
+    { id:"m9", tier:"media", texto:"Completa un equipo con la formación 3-5-2", premio:"🧠", check:c => c.formacion === "3-5-2" },
+    { id:"m10", tier:"media", texto:"Junta 5 jugadores del mismo país", premio:"🗺️", check:c => c.maxMismoPais >= 5 },
+    { id:"m11", tier:"media", texto:"Gana un 1 contra 1 en el modo Viaje al pasado", premio:"⏳",
+      check:c => c.versusWin && c.modo === "pasado" },
+    { id:"d7", tier:"dificil", texto:"Completa un equipo con la formación 5-4-1", premio:"🏰", check:c => c.formacion === "5-4-1" },
+    { id:"d8", tier:"dificil", texto:"Junta 7 jugadores del mismo país", premio:"🎌", check:c => c.maxMismoPais >= 7 },
+    { id:"d9", tier:"dificil", texto:"Modo difícil en el Viaje al pasado", premio:"🎃",
+      check:c => c.dificil === true && c.modo === "pasado" },
+    // --- 10 misiones que DESBLOQUEAN cromos especiales ---
+    { id:"e1", tier:"media", texto:"Equipo de +91 de media → desbloquea 🌈 Messi Arcoíris ★99", premio:"🌈",
+      check:c => c.media > 91 },
+    { id:"e2", tier:"media", texto:"Ficha a Cristiano y llega a +90 → ❤️‍🔥 Cristiano Rubí ★98", premio:"❤️‍🔥",
+      check:c => c.nombres.includes("Cristiano Ronaldo") && c.media > 90 },
+    { id:"e3", tier:"media", texto:"Ficha a Mbappé y llega a +89 → 🥇 Mbappé Oro ★97", premio:"🥇",
+      check:c => c.nombres.includes("Mbappé") && c.media > 89 },
+    { id:"e4", tier:"dificil", texto:"Equipo de +85 en Dificultad Difícil → 💠 Haaland Diamante ★97", premio:"💠",
+      check:c => c.dificil === true && c.media > 85 },
+    { id:"e5", tier:"media", texto:"Ficha a Lamine y llega a +88 → 🌈 Lamine Arcoíris ★96", premio:"🎏",
+      check:c => c.nombres.includes("Lamine Yamal") && c.media > 88 },
+    { id:"e6", tier:"dificil", texto:"Equipo de leyendas de +92 → 👑 Pelé Cósmico ★99", premio:"👑",
+      check:c => c.modo === "pasado" && c.media > 92 },
+    { id:"e7", tier:"media", texto:"Ficha a Maradona en el pasado → 🌈 Maradona Arcoíris ★99", premio:"🎇",
+      check:c => c.modo === "pasado" && c.nombres.includes("Maradona") },
+    { id:"e8", tier:"dificil", texto:"Leyendas de +90 con formación 4-3-3 → 💠 Cruyff Diamante ★98", premio:"🔷",
+      check:c => c.modo === "pasado" && c.media > 90 && c.formacion === "4-3-3" },
+    { id:"e9", tier:"media", texto:"Ficha a Ronaldinho o a Zico en el pasado → 🎉 Ronaldinho Fiesta ★98", premio:"🎉",
+      check:c => c.modo === "pasado" && (c.nombres.includes("Ronaldinho") || c.nombres.includes("Zico")) },
+    { id:"e10", tier:"dificil", texto:"Junta 4 del mismo país en el pasado → 🪄 Garrincha Mágico ★97", premio:"🪄",
+      check:c => c.modo === "pasado" && c.maxMismoPais >= 4 },
+    // --- 10 misiones mas de cromos especiales ---
+    { id:"e11", tier:"media", texto:"Ficha a Vinícius y llega a +90 → 🌈 Vinícius Arcoíris ★97", premio:"🌈",
+      check:c => c.nombres.includes("Vinícius Jr") && c.media > 90 },
+    { id:"e12", tier:"media", texto:"Ficha a Bellingham y llega a +90 → 💠 Bellingham Diamante ★96", premio:"💠",
+      check:c => c.nombres.includes("Bellingham") && c.media > 90 },
+    { id:"e13", tier:"media", texto:"Ficha a Rodri con la formación 4-3-3 → 🥇 Rodri Oro ★95", premio:"🥇",
+      check:c => c.nombres.includes("Rodri") && c.formacion === "4-3-3" },
+    { id:"e14", tier:"media", texto:"Ficha a Salah y llega a +88 → ❤️‍🔥 Salah Rubí ★95", premio:"❤️‍🔥",
+      check:c => c.nombres.includes("Salah") && c.media > 88 },
+    { id:"e15", tier:"media", texto:"Ficha a Kane y llega a +87 → 🪄 Kane Mágico ★95", premio:"🎏",
+      check:c => c.nombres.includes("Kane") && c.media > 87 },
+    { id:"e16", tier:"dificil", texto:"Leyendas de +90 con Zidane → 🌈 Zidane Arcoíris ★99", premio:"🎇",
+      check:c => c.modo === "pasado" && c.nombres.includes("Zidane") && c.media > 90 },
+    { id:"e17", tier:"media", texto:"Ficha a Ronaldo Nazário en el pasado → 🎉 Ronaldo Fiesta ★99", premio:"🎉",
+      check:c => c.modo === "pasado" && c.nombres.includes("Ronaldo Nazário") },
+    { id:"e18", tier:"dificil", texto:"Equipo de leyendas de +91 → 💠 Beckenbauer Diamante ★98", premio:"🔷",
+      check:c => c.modo === "pasado" && c.media > 91 },
+    { id:"e19", tier:"media", texto:"Ficha a Xavi o Iniesta en el pasado → 🥇 Xavi Oro ★97", premio:"🏅",
+      check:c => c.modo === "pasado" && (c.nombres.includes("Xavi") || c.nombres.includes("Iniesta")) },
+    { id:"e20", tier:"dificil", texto:"Junta 5 del mismo país en el pasado → 👑 Roberto Carlos Cósmico ★96", premio:"👑",
+      check:c => c.modo === "pasado" && c.maxMismoPais >= 5 },
+    // --- 10 misiones que dan MONEDAS 🪙 ---
+    { id:"c1", tier:"facil", texto:"Completa un equipo de +80 → 🪙 10 monedas", premio:"🪙", monedas:10, check:c => c.media > 80 },
+    { id:"c2", tier:"facil", texto:"Ficha a un jugador de España → 🪙 10 monedas", premio:"🪙", monedas:10, check:c => c.paises.includes("España") },
+    { id:"c3", tier:"media", texto:"Completa un equipo de +85 → 🪙 20 monedas", premio:"🪙", monedas:20, check:c => c.media > 85 },
+    { id:"c4", tier:"media", texto:"Completa un 11 en el Viaje al pasado → 🪙 15 monedas", premio:"🪙", monedas:15, check:c => c.modo === "pasado" },
+    { id:"c5", tier:"media", texto:"Usa la formación 4-2-4 → 🪙 15 monedas", premio:"🪙", monedas:15, check:c => c.formacion === "4-2-4" },
+    { id:"c6", tier:"media", texto:"Junta 4 del mismo país → 🪙 25 monedas", premio:"🪙", monedas:25, check:c => c.maxMismoPais >= 4 },
+    { id:"c7", tier:"dificil", texto:"Completa un equipo en Dificultad Difícil → 🪙 30 monedas", premio:"🪙", monedas:30, check:c => c.dificil === true },
+    { id:"c8", tier:"dificil", texto:"Gana un 1 contra 1 o a la máquina → 🪙 30 monedas", premio:"🪙", monedas:30, check:c => c.versusWin },
+    { id:"c9", tier:"dificil", texto:"Completa un equipo de +90 → 🪙 40 monedas", premio:"🪙", monedas:40, check:c => c.media > 90 },
+    { id:"c10", tier:"dificil", texto:"Consigue un equipazo de +93 → 🪙 60 monedas", premio:"🪙", monedas:60, check:c => c.media > 93 },
+    // --- 40 misiones más ---
+    { id:"g1", tier:"facil", texto:"Completa un equipo de +79 → 🪙 10", premio:"🪙", monedas:10, check:c => c.media > 79 },
+    { id:"g2", tier:"facil", texto:"Ficha a un jugador de Brasil → 🪙 10", premio:"🪙", monedas:10, check:c => c.paises.includes("Brasil") },
+    { id:"g3", tier:"facil", texto:"Ficha a un jugador de Argentina → 🪙 10", premio:"🪙", monedas:10, check:c => c.paises.includes("Argentina") },
+    { id:"g4", tier:"facil", texto:"Ficha a un jugador de Francia → 🪙 10", premio:"🪙", monedas:10, check:c => c.paises.includes("Francia") },
+    { id:"g5", tier:"facil", texto:"Usa la formación 3-4-3", premio:"📐", check:c => c.formacion === "3-4-3" },
+    { id:"g6", tier:"facil", texto:"Usa la formación 5-3-2", premio:"🥅", check:c => c.formacion === "5-3-2" },
+    { id:"g7", tier:"facil", texto:"Ficha a Neymar en tu equipo", premio:"🌟", check:c => c.nombres.includes("Neymar") },
+    { id:"g8", tier:"facil", texto:"Ficha a Lewandowski en tu equipo", premio:"🎯", check:c => c.nombres.includes("Lewandowski") },
+    { id:"g9", tier:"facil", texto:"Ficha a un jugador de Alemania → 🪙 10", premio:"🪙", monedas:10, check:c => c.paises.includes("Alemania") },
+    { id:"g10", tier:"facil", texto:"Ficha a un jugador de Italia → 🪙 10", premio:"🪙", monedas:10, check:c => c.paises.includes("Italia") },
+    { id:"g11", tier:"facil", texto:"Ficha a un jugador de Portugal → 🪙 10", premio:"🪙", monedas:10, check:c => c.paises.includes("Portugal") },
+    { id:"g12", tier:"facil", texto:"Ficha a un jugador de Inglaterra → 🪙 10", premio:"🪙", monedas:10, check:c => c.paises.includes("Inglaterra") },
+    { id:"g13", tier:"facil", texto:"Junta 2 jugadores del mismo país → 🪙 10", premio:"🪙", monedas:10, check:c => c.maxMismoPais >= 2 },
+    { id:"g14", tier:"facil", texto:"Completa un equipo de +81 → 🪙 10", premio:"🪙", monedas:10, check:c => c.media > 81 },
+    { id:"g15", tier:"media", texto:"Completa un equipo de +84 → 🪙 20", premio:"🪙", monedas:20, check:c => c.media > 84 },
+    { id:"g16", tier:"media", texto:"Completa un equipo de +86 → 🪙 20", premio:"🪙", monedas:20, check:c => c.media > 86 },
+    { id:"g17", tier:"media", texto:"Usa la formación 4-5-1", premio:"🧠", check:c => c.formacion === "4-5-1" },
+    { id:"g18", tier:"media", texto:"Usa la formación 3-6-1", premio:"🧩", check:c => c.formacion === "3-6-1" },
+    { id:"g19", tier:"media", texto:"Usa la formación 5-2-3", premio:"⚔️", check:c => c.formacion === "5-2-3" },
+    { id:"g20", tier:"media", texto:"Ficha a Bellingham en tu equipo", premio:"🎖️", check:c => c.nombres.includes("Bellingham") },
+    { id:"g21", tier:"media", texto:"Ficha a Vinícius en tu equipo", premio:"✨", check:c => c.nombres.includes("Vinícius Jr") },
+    { id:"g22", tier:"media", texto:"Ficha a Mbappé en tu equipo", premio:"⚡", check:c => c.nombres.includes("Mbappé") },
+    { id:"g23", tier:"media", texto:"Ficha a un jugador de Países Bajos → 🪙 15", premio:"🪙", monedas:15, check:c => c.paises.includes("Países Bajos") },
+    { id:"g24", tier:"media", texto:"Ficha a un jugador de Croacia → 🪙 15", premio:"🪙", monedas:15, check:c => c.paises.includes("Croacia") },
+    { id:"g25", tier:"media", texto:"Equipo de +87 en el modo Mundial 2026 → 🪙 20", premio:"🪙", monedas:20, check:c => c.modo === "actual" && c.media > 87 },
+    { id:"g26", tier:"media", texto:"Equipo de leyendas de +88 → 🪙 20", premio:"🪙", monedas:20, check:c => c.modo === "pasado" && c.media > 88 },
+    { id:"g27", tier:"media", texto:"Junta 4 del mismo país → 🪙 25", premio:"🪙", monedas:25, check:c => c.maxMismoPais >= 4 },
+    { id:"g28", tier:"media", texto:"Gana un 1 contra 1 o a la máquina → 🪙 25", premio:"🪙", monedas:25, check:c => c.versusWin },
+    { id:"g29", tier:"dificil", texto:"Completa un equipo de +89 → 🪙 30", premio:"🪙", monedas:30, check:c => c.media > 89 },
+    { id:"g30", tier:"dificil", texto:"Completa un equipo de +91 → 🪙 40", premio:"🪙", monedas:40, check:c => c.media > 91 },
+    { id:"g31", tier:"dificil", texto:"Consigue un equipazo de +94 → 🪙 70", premio:"🪙", monedas:70, check:c => c.media > 94 },
+    { id:"g32", tier:"dificil", texto:"Junta 6 del mismo país → 🪙 40", premio:"🪙", monedas:40, check:c => c.maxMismoPais >= 6 },
+    { id:"g33", tier:"dificil", texto:"Equipo de +88 en Dificultad Difícil → 🪙 35", premio:"🪙", monedas:35, check:c => c.dificil === true && c.media > 88 },
+    { id:"g34", tier:"dificil", texto:"Gana con un equipo de +90 → 🪙 40", premio:"🪙", monedas:40, check:c => c.versusWin && c.media > 90 },
+    { id:"g35", tier:"dificil", texto:"Leyendas de +93 de media → 🪙 50", premio:"🪙", monedas:50, check:c => c.modo === "pasado" && c.media > 93 },
+    { id:"g36", tier:"dificil", texto:"Ficha a Messi Y a Cristiano y llega a +90", premio:"🐐", check:c => c.nombres.includes("Messi") && c.nombres.includes("Cristiano Ronaldo") && c.media > 90 },
+    { id:"g37", tier:"dificil", texto:"Junta 5 del mismo país en el modo actual → 🪙 35", premio:"🪙", monedas:35, check:c => c.modo === "actual" && c.maxMismoPais >= 5 },
+    { id:"g38", tier:"dificil", texto:"Formación 5-4-1 con un equipo de +88 → 🪙 30", premio:"🪙", monedas:30, check:c => c.formacion === "5-4-1" && c.media > 88 },
+    { id:"g39", tier:"dificil", texto:"Ficha a Pelé o a Maradona en el pasado", premio:"🌌", check:c => c.modo === "pasado" && (c.nombres.includes("Pelé") || c.nombres.includes("Maradona")) },
+    { id:"g40", tier:"dificil", texto:"Equipo de +90 con Dificultad Difícil → 🪙 50", premio:"🪙", monedas:50, check:c => c.dificil === true && c.media > 90 },
+  ];
+
+  let misionesEnMemoria = [];
+  function cargarMisiones() {
+    try { const g = localStorage.getItem("misionesHechas"); if (g) return JSON.parse(g); }
+    catch (e) { /* usamos la copia en memoria */ }
+    return misionesEnMemoria;
+  }
+  function guardarMisiones(lista) {
+    misionesEnMemoria = lista;
+    try { localStorage.setItem("misionesHechas", JSON.stringify(lista)); } catch (e) {}
+  }
+
+  // ===== Cromos especiales que se desbloquean con misiones =====
+  const CROMOS_ESPECIALES = [
+    // Modo actual (Mundial 2026)
+    { especialId:"esp_messi",  mision:"e1", modo:"actual", pos:"ED",  n:"Messi", p:"🇦🇷 Argentina", m:99, e:"🐐", tipo:"arcoiris" },
+    { especialId:"esp_cr7",    mision:"e2", modo:"actual", pos:"DC",  n:"Cristiano Ronaldo", p:"🇵🇹 Portugal", m:98, e:"🐐", tipo:"rubi" },
+    { especialId:"esp_mbappe", mision:"e3", modo:"actual", pos:"EI",  n:"Mbappé", p:"🇫🇷 Francia", m:97, e:"⚡", tipo:"oro" },
+    { especialId:"esp_haaland",mision:"e4", modo:"actual", pos:"DC",  n:"Haaland", p:"🇳🇴 Noruega", m:97, e:"💥", tipo:"diamante" },
+    { especialId:"esp_lamine", mision:"e5", modo:"actual", pos:"ED",  n:"Lamine Yamal", p:"🇪🇸 España", m:96, e:"✨", tipo:"arcoiris" },
+    // Modo Viaje al pasado (leyendas)
+    { especialId:"esp_pele",   mision:"e6", modo:"pasado", pos:"DC",  n:"Pelé", p:"🇧🇷 Brasil", m:99, e:"👑", tipo:"cosmico" },
+    { especialId:"esp_marado", mision:"e7", modo:"pasado", pos:"MCO", n:"Maradona", p:"🇦🇷 Argentina", m:99, e:"🐐", tipo:"arcoiris" },
+    { especialId:"esp_cruyff", mision:"e8", modo:"pasado", pos:"MCO", n:"Cruyff", p:"🇳🇱 Países Bajos", m:98, e:"👑", tipo:"diamante" },
+    { especialId:"esp_ronald", mision:"e9", modo:"pasado", pos:"MCO", n:"Ronaldinho", p:"🇧🇷 Brasil", m:98, e:"🎉", tipo:"fiesta" },
+    { especialId:"esp_garrin", mision:"e10",modo:"pasado", pos:"ED",  n:"Garrincha", p:"🇧🇷 Brasil", m:97, e:"🪄", tipo:"magico" },
+    // --- 10 cromos especiales nuevos ---
+    { especialId:"esp_vini",   mision:"e11", modo:"actual", pos:"EI",  n:"Vinícius Jr", p:"🇧🇷 Brasil", m:97, e:"🌟", tipo:"arcoiris" },
+    { especialId:"esp_belli",  mision:"e12", modo:"actual", pos:"MC",  n:"Bellingham", p:"🏴 Inglaterra", m:96, e:"🎯", tipo:"diamante" },
+    { especialId:"esp_rodri",  mision:"e13", modo:"actual", pos:"MCD", n:"Rodri", p:"🇪🇸 España", m:95, e:"🧱", tipo:"oro" },
+    { especialId:"esp_salah",  mision:"e14", modo:"actual", pos:"ED",  n:"Salah", p:"🇪🇬 Egipto", m:95, e:"🌟", tipo:"rubi" },
+    { especialId:"esp_kane",   mision:"e15", modo:"actual", pos:"DC",  n:"Kane", p:"🏴 Inglaterra", m:95, e:"🎯", tipo:"magico" },
+    { especialId:"esp_zizou",  mision:"e16", modo:"pasado", pos:"MCO", n:"Zidane", p:"🇫🇷 Francia", m:99, e:"🐐", tipo:"arcoiris" },
+    { especialId:"esp_r9",     mision:"e17", modo:"pasado", pos:"DC",  n:"Ronaldo Nazário", p:"🇧🇷 Brasil", m:99, e:"🔥", tipo:"fiesta" },
+    { especialId:"esp_kaiser", mision:"e18", modo:"pasado", pos:"DFC", n:"Beckenbauer", p:"🇩🇪 Alemania", m:98, e:"🛡️", tipo:"diamante" },
+    { especialId:"esp_xavi",   mision:"e19", modo:"pasado", pos:"MC",  n:"Xavi", p:"🇪🇸 España", m:97, e:"🎯", tipo:"oro" },
+    { especialId:"esp_rc3",    mision:"e20", modo:"pasado", pos:"LI",  n:"Roberto Carlos", p:"🇧🇷 Brasil", m:96, e:"🛡️", tipo:"cosmico" },
+  ];
+
+  // ===== Cromos que salen en los SOBRES de la tienda (se compran con monedas) =====
+  const CROMOS_TIENDA = [
+    // Sobre Plata (jugadores actuales)
+    { especialId:"t_pedri",   nivel:"plata", modo:"actual", pos:"MC",  n:"Pedri", p:"🇪🇸 España", m:95, e:"🎯", tipo:"diamante" },
+    { especialId:"t_wirtz",   nivel:"plata", modo:"actual", pos:"MCO", n:"Wirtz", p:"🇩🇪 Alemania", m:95, e:"✨", tipo:"arcoiris" },
+    { especialId:"t_musiala", nivel:"plata", modo:"actual", pos:"MCO", n:"Musiala", p:"🇩🇪 Alemania", m:95, e:"✨", tipo:"oro" },
+    { especialId:"t_rodrygo", nivel:"plata", modo:"actual", pos:"ED",  n:"Rodrygo", p:"🇧🇷 Brasil", m:94, e:"🌟", tipo:"rubi" },
+    { especialId:"t_nico",    nivel:"plata", modo:"actual", pos:"EI",  n:"Nico Williams", p:"🇪🇸 España", m:93, e:"⚡", tipo:"arcoiris" },
+    { especialId:"t_gyoke",   nivel:"plata", modo:"actual", pos:"DC",  n:"Gyökeres", p:"🇸🇪 Suecia", m:93, e:"💥", tipo:"magico" },
+    // Sobre Oro (leyendas)
+    { especialId:"t_iniesta", nivel:"oro", modo:"pasado", pos:"MC",  n:"Iniesta", p:"🇪🇸 España", m:97, e:"🎯", tipo:"diamante" },
+    { especialId:"t_baresi",  nivel:"oro", modo:"pasado", pos:"DFC", n:"Baresi", p:"🇮🇹 Italia", m:96, e:"🛡️", tipo:"cosmico" },
+    { especialId:"t_cafu",    nivel:"oro", modo:"pasado", pos:"LD",  n:"Cafú", p:"🇧🇷 Brasil", m:95, e:"🛡️", tipo:"oro" },
+    { especialId:"t_maldini", nivel:"oro", modo:"pasado", pos:"LI",  n:"Maldini", p:"🇮🇹 Italia", m:97, e:"🛡️", tipo:"diamante" },
+    { especialId:"t_vanbast", nivel:"oro", modo:"pasado", pos:"DC",  n:"Van Basten", p:"🇳🇱 Países Bajos", m:97, e:"🔥", tipo:"fiesta" },
+    { especialId:"t_baggio",  nivel:"oro", modo:"pasado", pos:"MCO", n:"Baggio", p:"🇮🇹 Italia", m:96, e:"✨", tipo:"arcoiris" },
+    // --- 50 cartas especiales mas (25 actuales al Sobre Plata, 25 leyendas al Sobre Oro) ---
+    { especialId:"x_courtois", nivel:"plata", modo:"actual", pos:"POR", n:"Courtois", p:"🇧🇪 Bélgica", m:92, e:"🧤", tipo:"diamante" },
+    { especialId:"x_alisson",  nivel:"plata", modo:"actual", pos:"POR", n:"Alisson", p:"🇧🇷 Brasil", m:91, e:"🧤", tipo:"oro" },
+    { especialId:"x_vandijk",  nivel:"plata", modo:"actual", pos:"DFC", n:"Van Dijk", p:"🇳🇱 Países Bajos", m:95, e:"🛡️", tipo:"cosmico" },
+    { especialId:"x_saliba",   nivel:"plata", modo:"actual", pos:"DFC", n:"Saliba", p:"🇫🇷 Francia", m:93, e:"🛡️", tipo:"diamante" },
+    { especialId:"x_rudiger",  nivel:"plata", modo:"actual", pos:"DFC", n:"Rüdiger", p:"🇩🇪 Alemania", m:92, e:"🛡️", tipo:"magico" },
+    { especialId:"x_hakimi",   nivel:"plata", modo:"actual", pos:"LD",  n:"Hakimi", p:"🇲🇦 Marruecos", m:93, e:"🛡️", tipo:"arcoiris" },
+    { especialId:"x_theo",     nivel:"plata", modo:"actual", pos:"LI",  n:"Theo Hernández", p:"🇫🇷 Francia", m:92, e:"🛡️", tipo:"fiesta" },
+    { especialId:"x_gvardiol", nivel:"plata", modo:"actual", pos:"LI",  n:"Gvardiol", p:"🇭🇷 Croacia", m:93, e:"🛡️", tipo:"diamante" },
+    { especialId:"x_taa",      nivel:"plata", modo:"actual", pos:"LD",  n:"Alexander-Arnold", p:"🏴 Inglaterra", m:92, e:"🛡️", tipo:"oro" },
+    { especialId:"x_kdb",      nivel:"plata", modo:"actual", pos:"MCO", n:"De Bruyne", p:"🇧🇪 Bélgica", m:94, e:"✨", tipo:"arcoiris" },
+    { especialId:"x_brunof",   nivel:"plata", modo:"actual", pos:"MCO", n:"Bruno Fernandes", p:"🇵🇹 Portugal", m:93, e:"✨", tipo:"rubi" },
+    { especialId:"x_foden",    nivel:"plata", modo:"actual", pos:"MCO", n:"Foden", p:"🏴 Inglaterra", m:93, e:"✨", tipo:"oro" },
+    { especialId:"x_valverde", nivel:"plata", modo:"actual", pos:"MC",  n:"Valverde", p:"🇺🇾 Uruguay", m:93, e:"🎯", tipo:"diamante" },
+    { especialId:"x_rice",     nivel:"plata", modo:"actual", pos:"MCD", n:"Rice", p:"🏴 Inglaterra", m:92, e:"🧱", tipo:"cosmico" },
+    { especialId:"x_kimmich",  nivel:"plata", modo:"actual", pos:"MCD", n:"Kimmich", p:"🇩🇪 Alemania", m:91, e:"🧱", tipo:"oro" },
+    { especialId:"x_modric",   nivel:"plata", modo:"actual", pos:"MC",  n:"Modrić", p:"🇭🇷 Croacia", m:91, e:"🎯", tipo:"arcoiris" },
+    { especialId:"x_lautaro",  nivel:"plata", modo:"actual", pos:"DC",  n:"Lautaro", p:"🇦🇷 Argentina", m:93, e:"🔥", tipo:"fiesta" },
+    { especialId:"x_osimhen",  nivel:"plata", modo:"actual", pos:"DC",  n:"Osimhen", p:"🇳🇬 Nigeria", m:92, e:"🔥", tipo:"magico" },
+    { especialId:"x_julian",   nivel:"plata", modo:"actual", pos:"DC",  n:"Julián Álvarez", p:"🇦🇷 Argentina", m:92, e:"🔥", tipo:"rubi" },
+    { especialId:"x_griez",    nivel:"plata", modo:"actual", pos:"DC",  n:"Griezmann", p:"🇫🇷 Francia", m:92, e:"🔥", tipo:"oro" },
+    { especialId:"x_lewa",     nivel:"plata", modo:"actual", pos:"DC",  n:"Lewandowski", p:"🇵🇱 Polonia", m:94, e:"🔥", tipo:"cosmico" },
+    { especialId:"x_kvara",    nivel:"plata", modo:"actual", pos:"EI",  n:"Kvaratskhelia", p:"🇬🇪 Georgia", m:91, e:"⚡", tipo:"arcoiris" },
+    { especialId:"x_son",      nivel:"plata", modo:"actual", pos:"EI",  n:"Son", p:"🇰🇷 Corea del Sur", m:91, e:"⚡", tipo:"magico" },
+    { especialId:"x_saka",     nivel:"plata", modo:"actual", pos:"ED",  n:"Saka", p:"🏴 Inglaterra", m:92, e:"⚡", tipo:"oro" },
+    { especialId:"x_dembele",  nivel:"plata", modo:"actual", pos:"ED",  n:"Dembélé", p:"🇫🇷 Francia", m:92, e:"⚡", tipo:"rubi" },
+    { especialId:"x_buffon",   nivel:"oro", modo:"pasado", pos:"POR", n:"Buffon", p:"🇮🇹 Italia", m:96, e:"🧤", tipo:"cosmico" },
+    { especialId:"x_yashin",   nivel:"oro", modo:"pasado", pos:"POR", n:"Yashin", p:"🇷🇺 Rusia", m:94, e:"🧤", tipo:"diamante" },
+    { especialId:"x_casillas", nivel:"oro", modo:"pasado", pos:"POR", n:"Casillas", p:"🇪🇸 España", m:93, e:"🧤", tipo:"oro" },
+    { especialId:"x_cannavaro",nivel:"oro", modo:"pasado", pos:"DFC", n:"Cannavaro", p:"🇮🇹 Italia", m:94, e:"🛡️", tipo:"diamante" },
+    { especialId:"x_nesta",    nivel:"oro", modo:"pasado", pos:"DFC", n:"Nesta", p:"🇮🇹 Italia", m:93, e:"🛡️", tipo:"arcoiris" },
+    { especialId:"x_puyol",    nivel:"oro", modo:"pasado", pos:"DFC", n:"Puyol", p:"🇪🇸 España", m:92, e:"🛡️", tipo:"fiesta" },
+    { especialId:"x_lahm",     nivel:"oro", modo:"pasado", pos:"LD",  n:"Lahm", p:"🇩🇪 Alemania", m:92, e:"🛡️", tipo:"oro" },
+    { especialId:"x_zanetti",  nivel:"oro", modo:"pasado", pos:"LD",  n:"Zanetti", p:"🇦🇷 Argentina", m:91, e:"🛡️", tipo:"diamante" },
+    { especialId:"x_makelele", nivel:"oro", modo:"pasado", pos:"MCD", n:"Makélélé", p:"🇫🇷 Francia", m:91, e:"🧱", tipo:"cosmico" },
+    { especialId:"x_vieira",   nivel:"oro", modo:"pasado", pos:"MCD", n:"Vieira", p:"🇫🇷 Francia", m:92, e:"🧱", tipo:"diamante" },
+    { especialId:"x_pirlo",    nivel:"oro", modo:"pasado", pos:"MC",  n:"Pirlo", p:"🇮🇹 Italia", m:93, e:"🎯", tipo:"arcoiris" },
+    { especialId:"x_gerrard",  nivel:"oro", modo:"pasado", pos:"MC",  n:"Gerrard", p:"🏴 Inglaterra", m:93, e:"🎯", tipo:"rubi" },
+    { especialId:"x_scholes",  nivel:"oro", modo:"pasado", pos:"MC",  n:"Scholes", p:"🏴 Inglaterra", m:92, e:"🎯", tipo:"oro" },
+    { especialId:"x_matthaus", nivel:"oro", modo:"pasado", pos:"MC",  n:"Matthäus", p:"🇩🇪 Alemania", m:93, e:"🎯", tipo:"diamante" },
+    { especialId:"x_gullit",   nivel:"oro", modo:"pasado", pos:"MC",  n:"Gullit", p:"🇳🇱 Países Bajos", m:93, e:"🎯", tipo:"fiesta" },
+    { especialId:"x_totti",    nivel:"oro", modo:"pasado", pos:"MCO", n:"Totti", p:"🇮🇹 Italia", m:93, e:"✨", tipo:"arcoiris" },
+    { especialId:"x_platini",  nivel:"oro", modo:"pasado", pos:"MCO", n:"Platini", p:"🇫🇷 Francia", m:94, e:"✨", tipo:"cosmico" },
+    { especialId:"x_kaka",     nivel:"oro", modo:"pasado", pos:"MCO", n:"Kaká", p:"🇧🇷 Brasil", m:93, e:"✨", tipo:"rubi" },
+    { especialId:"x_zico",     nivel:"oro", modo:"pasado", pos:"MCO", n:"Zico", p:"🇧🇷 Brasil", m:93, e:"✨", tipo:"magico" },
+    { especialId:"x_distefano",nivel:"oro", modo:"pasado", pos:"DC",  n:"Di Stéfano", p:"🇦🇷 Argentina", m:96, e:"🔥", tipo:"cosmico" },
+    { especialId:"x_puskas",   nivel:"oro", modo:"pasado", pos:"DC",  n:"Puskás", p:"🇭🇺 Hungría", m:95, e:"🔥", tipo:"diamante" },
+    { especialId:"x_eusebio",  nivel:"oro", modo:"pasado", pos:"DC",  n:"Eusébio", p:"🇵🇹 Portugal", m:95, e:"🔥", tipo:"fiesta" },
+    { especialId:"x_romario",  nivel:"oro", modo:"pasado", pos:"DC",  n:"Romário", p:"🇧🇷 Brasil", m:94, e:"🔥", tipo:"arcoiris" },
+    { especialId:"x_henry",    nivel:"oro", modo:"pasado", pos:"DC",  n:"Henry", p:"🇫🇷 Francia", m:94, e:"🔥", tipo:"oro" },
+    { especialId:"x_muller",   nivel:"oro", modo:"pasado", pos:"DC",  n:"Gerd Müller", p:"🇩🇪 Alemania", m:94, e:"🔥", tipo:"magico" },
+    // --- 38 cartas especiales más (19 actuales al Plata, 19 leyendas al Oro) ---
+    { especialId:"y_donna",   nivel:"plata", modo:"actual", pos:"POR", n:"Donnarumma", p:"🇮🇹 Italia", m:92, e:"🧤", tipo:"diamante" },
+    { especialId:"y_neuer",   nivel:"plata", modo:"actual", pos:"POR", n:"Neuer", p:"🇩🇪 Alemania", m:91, e:"🧤", tipo:"oro" },
+    { especialId:"y_marqui",  nivel:"plata", modo:"actual", pos:"DFC", n:"Marquinhos", p:"🇧🇷 Brasil", m:90, e:"🛡️", tipo:"cosmico" },
+    { especialId:"y_militao", nivel:"plata", modo:"actual", pos:"DFC", n:"Militão", p:"🇧🇷 Brasil", m:90, e:"🛡️", tipo:"diamante" },
+    { especialId:"y_bastoni", nivel:"plata", modo:"actual", pos:"DFC", n:"Bastoni", p:"🇮🇹 Italia", m:90, e:"🛡️", tipo:"magico" },
+    { especialId:"y_nuno",    nivel:"plata", modo:"actual", pos:"LI",  n:"Nuno Mendes", p:"🇵🇹 Portugal", m:90, e:"🛡️", tipo:"arcoiris" },
+    { especialId:"y_kounde",  nivel:"plata", modo:"actual", pos:"LD",  n:"Koundé", p:"🇫🇷 Francia", m:90, e:"🛡️", tipo:"oro" },
+    { especialId:"y_carva",   nivel:"plata", modo:"actual", pos:"LD",  n:"Carvajal", p:"🇪🇸 España", m:91, e:"🛡️", tipo:"diamante" },
+    { especialId:"y_tchoua",  nivel:"plata", modo:"actual", pos:"MCD", n:"Tchouaméni", p:"🇫🇷 Francia", m:91, e:"🧱", tipo:"cosmico" },
+    { especialId:"y_bruguima",nivel:"plata", modo:"actual", pos:"MCD", n:"Bruno Guimarães", p:"🇧🇷 Brasil", m:90, e:"🧱", tipo:"diamante" },
+    { especialId:"y_dejong",  nivel:"plata", modo:"actual", pos:"MC",  n:"De Jong", p:"🇳🇱 Países Bajos", m:91, e:"🎯", tipo:"arcoiris" },
+    { especialId:"y_gavi",    nivel:"plata", modo:"actual", pos:"MC",  n:"Gavi", p:"🇪🇸 España", m:90, e:"🎯", tipo:"fiesta" },
+    { especialId:"y_palmer",  nivel:"plata", modo:"actual", pos:"MCO", n:"Cole Palmer", p:"🏴 Inglaterra", m:93, e:"✨", tipo:"rubi" },
+    { especialId:"y_bernardo",nivel:"plata", modo:"actual", pos:"MCO", n:"Bernardo Silva", p:"🇵🇹 Portugal", m:92, e:"✨", tipo:"oro" },
+    { especialId:"y_odegaard",nivel:"plata", modo:"actual", pos:"MCO", n:"Ødegaard", p:"🇳🇴 Noruega", m:91, e:"✨", tipo:"diamante" },
+    { especialId:"y_isak",    nivel:"plata", modo:"actual", pos:"DC",  n:"Isak", p:"🇸🇪 Suecia", m:91, e:"🔥", tipo:"fiesta" },
+    { especialId:"y_neymar",  nivel:"plata", modo:"actual", pos:"EI",  n:"Neymar", p:"🇧🇷 Brasil", m:94, e:"⚡", tipo:"arcoiris" },
+    { especialId:"y_leao",    nivel:"plata", modo:"actual", pos:"EI",  n:"Rafael Leão", p:"🇵🇹 Portugal", m:91, e:"⚡", tipo:"oro" },
+    { especialId:"y_kudus",   nivel:"plata", modo:"actual", pos:"ED",  n:"Kudus", p:"🇬🇭 Ghana", m:90, e:"⚡", tipo:"magico" },
+    { especialId:"y_kahn",    nivel:"oro", modo:"pasado", pos:"POR", n:"Kahn", p:"🇩🇪 Alemania", m:94, e:"🧤", tipo:"diamante" },
+    { especialId:"y_vdsar",   nivel:"oro", modo:"pasado", pos:"POR", n:"Van der Sar", p:"🇳🇱 Países Bajos", m:92, e:"🧤", tipo:"oro" },
+    { especialId:"y_ferdi",   nivel:"oro", modo:"pasado", pos:"DFC", n:"Ferdinand", p:"🏴 Inglaterra", m:93, e:"🛡️", tipo:"diamante" },
+    { especialId:"y_stam",    nivel:"oro", modo:"pasado", pos:"DFC", n:"Stam", p:"🇳🇱 Países Bajos", m:92, e:"🛡️", tipo:"magico" },
+    { especialId:"y_terry",   nivel:"oro", modo:"pasado", pos:"DFC", n:"Terry", p:"🏴 Inglaterra", m:92, e:"🛡️", tipo:"fiesta" },
+    { especialId:"y_nilton",  nivel:"oro", modo:"pasado", pos:"LI",  n:"Nilton Santos", p:"🇧🇷 Brasil", m:93, e:"🛡️", tipo:"cosmico" },
+    { especialId:"y_alves",   nivel:"oro", modo:"pasado", pos:"LD",  n:"Dani Alves", p:"🇧🇷 Brasil", m:93, e:"🛡️", tipo:"oro" },
+    { especialId:"y_redondo", nivel:"oro", modo:"pasado", pos:"MCD", n:"Redondo", p:"🇦🇷 Argentina", m:92, e:"🧱", tipo:"arcoiris" },
+    { especialId:"y_rijka",   nivel:"oro", modo:"pasado", pos:"MCD", n:"Rijkaard", p:"🇳🇱 Países Bajos", m:93, e:"🧱", tipo:"diamante" },
+    { especialId:"y_xabi",    nivel:"oro", modo:"pasado", pos:"MCD", n:"Xabi Alonso", p:"🇪🇸 España", m:93, e:"🧱", tipo:"oro" },
+    { especialId:"y_lampard", nivel:"oro", modo:"pasado", pos:"MC",  n:"Lampard", p:"🏴 Inglaterra", m:93, e:"🎯", tipo:"rubi" },
+    { especialId:"y_seedorf", nivel:"oro", modo:"pasado", pos:"MC",  n:"Seedorf", p:"🇳🇱 Países Bajos", m:92, e:"🎯", tipo:"arcoiris" },
+    { especialId:"y_schweini",nivel:"oro", modo:"pasado", pos:"MC",  n:"Schweinsteiger", p:"🇩🇪 Alemania", m:92, e:"🎯", tipo:"diamante" },
+    { especialId:"y_riquelme",nivel:"oro", modo:"pasado", pos:"MCO", n:"Riquelme", p:"🇦🇷 Argentina", m:94, e:"✨", tipo:"cosmico" },
+    { especialId:"y_delpiero",nivel:"oro", modo:"pasado", pos:"MCO", n:"Del Piero", p:"🇮🇹 Italia", m:95, e:"✨", tipo:"arcoiris" },
+    { especialId:"y_bergkamp",nivel:"oro", modo:"pasado", pos:"MCO", n:"Bergkamp", p:"🇳🇱 Países Bajos", m:95, e:"✨", tipo:"diamante" },
+    { especialId:"y_batistuta",nivel:"oro", modo:"pasado", pos:"DC", n:"Batistuta", p:"🇦🇷 Argentina", m:95, e:"🔥", tipo:"fiesta" },
+    { especialId:"y_zlatan",  nivel:"oro", modo:"pasado", pos:"DC",  n:"Zlatan", p:"🇸🇪 Suecia", m:95, e:"🔥", tipo:"magico" },
+    { especialId:"y_rooney",  nivel:"oro", modo:"pasado", pos:"DC",  n:"Rooney", p:"🏴 Inglaterra", m:93, e:"🔥", tipo:"rubi" },
+  ];
+  const SOBRES = [
+    { id:"plata",    nombre:"Sobre Plata",    emoji:"🥈", precio:60,  nivel:"plata" },
+    { id:"oro",      nombre:"Sobre Oro",      emoji:"🥇", precio:120, nivel:"oro" },
+    { id:"especial", nombre:"Sobre Especial", emoji:"🌈", precio:220, nivel:"todos" },
+  ];
+  function poolDeSobre(s) {
+    return CROMOS_TIENDA
+      .filter(c => s.nivel === "todos" || c.nivel === s.nivel)
+      .map(c => c.especialId);
+  }
+
+  // ===== Monedas =====
+  let monedasMem = 0;
+  function cargarMonedas() {
+    try { const g = localStorage.getItem("monedas"); if (g !== null) return parseInt(g, 10) || 0; } catch (e) {}
+    return monedasMem;
+  }
+  function guardarMonedas(n) {
+    monedasMem = n;
+    try { localStorage.setItem("monedas", String(n)); } catch (e) {}
+  }
+  function sonidoMoneda() {
+    try { tono(880, 0.08, "square", 0, 0.18); tono(1320, 0.12, "square", 0.07, 0.18); } catch (e) {}
+  }
+  function animarMonedas(desde, hasta) {
+    const box = document.getElementById("monedas-box");
+    if (!box) return;
+    const pasos = 12; let i = 0;
+    clearInterval(box._t);
+    box._t = setInterval(() => {
+      i++;
+      const val = Math.round(desde + (hasta - desde) * (i / pasos));
+      box.textContent = "🪙 " + val;
+      if (i >= pasos) { clearInterval(box._t); box.textContent = "🪙 " + hasta; }
+    }, 40);
+  }
+  function sumarMonedas(n) {
+    const antes = cargarMonedas();
+    guardarMonedas(antes + n);
+    animarMonedas(antes, antes + n); // el número sube poco a poco
+    sonidoMoneda();                  // ¡cha-ching!
+  }
+  function actualizarMonedas() {
+    const box = document.getElementById("monedas-box");
+    if (box) box.textContent = "🪙 " + cargarMonedas();
+  }
+
+  // ===== Cartas obtenidas en sobres (persistencia) =====
+  let sobreCardsMem = [];
+  function cargarSobreCards() {
+    try { const g = localStorage.getItem("cromosSobre"); if (g) return JSON.parse(g); } catch (e) {}
+    return sobreCardsMem;
+  }
+  function guardarSobreCards(lista) {
+    sobreCardsMem = lista;
+    try { localStorage.setItem("cromosSobre", JSON.stringify(lista)); } catch (e) {}
+  }
+
+  // Mete un cromo especial en su plantel (si no estaba ya)
+  function inyectarUno(c) {
+    const dataset = (c.modo === "pasado") ? leyendas : jugadores;
+    const pool = dataset[c.pos];
+    if (pool.some(j => j.especialId === c.especialId)) return;
+    pool.push({ n:c.n, p:c.p, m:c.m, e:c.e, tipo:c.tipo, especialId:c.especialId });
+  }
+  // Mete todos los cromos desbloqueados: por mision y por sobres comprados
+  function inyectarCromosDesbloqueados() {
+    const hechas = cargarMisiones();
+    CROMOS_ESPECIALES.forEach(c => { if (hechas.indexOf(c.mision) !== -1) inyectarUno(c); });
+    const sobre = cargarSobreCards();
+    CROMOS_TIENDA.forEach(c => { if (sobre.indexOf(c.especialId) !== -1) inyectarUno(c); });
+  }
+
+  // Reune los datos del equipo recien completado para comprobar las misiones
+  function contextoMision(media, versusWin) {
+    const cuentaPais = {};
+    plantilla.forEach(j => { const p = nombrePais(j.p); cuentaPais[p] = (cuentaPais[p] || 0) + 1; });
+    return {
+      media: media,
+      nombres: plantilla.map(j => j.n),
+      paises: plantilla.map(j => nombrePais(j.p)),
+      maxMismoPais: Math.max.apply(null, Object.values(cuentaPais)),
+      modo: (plantel === leyendas) ? "pasado" : "actual",
+      formacion: formacionNombre,
+      dificil: dificil,
+      versusWin: !!versusWin,
+    };
+  }
+
+  function revisarMisiones(ctx) {
+    const hechas = cargarMisiones();
+    const nuevas = [];
+    MISIONES.forEach(m => {
+      if (hechas.indexOf(m.id) === -1 && m.check(ctx)) {
+        hechas.push(m.id);
+        nuevas.push(m);
+      }
+    });
+    if (nuevas.length) {
+      guardarMisiones(hechas);
+      inyectarCromosDesbloqueados(); // desbloquea cromos especiales si toca
+      actualizarBotonAlbum();        // por si una misión desbloqueó una carta
+      const ganadas = nuevas.reduce((s, m) => s + (m.monedas || 0), 0);
+      if (ganadas) sumarMonedas(ganadas); // monedas de las misiones "c"
+      actualizarDecoracion();
+      actualizarBotonMisiones();
+      actualizarTitulo();
+      mostrarToastMision(nuevas);
+      if (hechas.length >= MISIONES.length) {
+        document.getElementById("premio-exclusivo").style.display = "block";
+        celebrarMisiones();      // 🏆 celebración al completar TODAS las misiones
+      }
+      celebrarColeccion();       // 📖 por si una misión desbloqueó la última carta
+    }
+  }
+
+  // Rangos: un titulo por cada escalon de misiones completadas
+  const RANGOS = [
+    { min:30, texto:"🐐 G.O.A.T", supremo:true },
+    { min:25, texto:"👑 Maestro" },
+    { min:20, texto:"🔥 Fenómeno" },
+    { min:15, texto:"🌟 Estrella" },
+    { min:10, texto:"⭐ Crack" },
+    { min:5,  texto:"🐣 Aprendiz" },
+  ];
+
+  // Muestra el rango ganado (debajo del nickname) segun cuantas misiones llevas
+  function actualizarTitulo() {
+    const t = document.getElementById("usuario-titulo");
+    const n = cargarMisiones().length;
+    const rango = RANGOS.find(r => n >= r.min); // el mas alto que alcanzas
+    if (rango) {
+      t.textContent = rango.texto;
+      t.classList.toggle("supremo", !!rango.supremo); // arcoiris solo para G.O.A.T
+      t.style.display = "block";
+    } else {
+      t.classList.remove("supremo");
+      t.style.display = "none";
+    }
+  }
+
+  // Los premios ganados adornan el menu (debajo del titulo)
+  function actualizarDecoracion() {
+    const hechas = cargarMisiones();
+    const premios = MISIONES.filter(m => hechas.indexOf(m.id) !== -1).map(m => m.premio);
+    const deco = document.getElementById("decoracion");
+    deco.textContent = premios.length
+      ? premios.join("  ")
+      : "Aún no tienes títulos. ¡Completa misiones! 🔒";
+    deco.classList.toggle("vacio", premios.length === 0);
+    actualizarToggleTitulos();
+  }
+  // Muestra el botón "Mostrar más" solo si los títulos no caben en 2 líneas
+  function actualizarToggleTitulos() {
+    const deco = document.getElementById("decoracion");
+    const btn = document.getElementById("toggle-titulos");
+    if (!btn) return;
+    const teniaColapsado = deco.classList.contains("colapsado");
+    deco.classList.remove("colapsado");
+    const alturaTotal = deco.scrollHeight;   // altura si se muestran todos
+    if (teniaColapsado) deco.classList.add("colapsado");
+    btn.style.display = alturaTotal > 86 ? "inline-block" : "none";
+  }
+  function toggleTitulos() {
+    const deco = document.getElementById("decoracion");
+    const btn = document.getElementById("toggle-titulos");
+    const colapsado = deco.classList.toggle("colapsado");
+    btn.textContent = colapsado ? "▼ Mostrar más" : "▲ Mostrar menos";
+  }
+
+  function actualizarBotonMisiones() {
+    document.getElementById("ver-misiones").textContent =
+      `🎯 Misiones (${cargarMisiones().length}/${MISIONES.length})`;
+  }
+
+  // Aviso temporal cuando completas una mision
+  const toast = document.getElementById("toast-mision");
+  let toastTimer = null;
+  function mostrarToastMision(nuevas) {
+    toast.innerHTML = nuevas.map(m =>
+      `🎉 ¡Misión completada! <b>${m.texto}</b> · Título: ${m.premio}`).join("<br>");
+    toast.style.display = "block";
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.style.display = "none"; }, 4500);
+  }
+
+  function renderMisiones() {
+    const panel = document.getElementById("misiones-panel");
+    const hechas = cargarMisiones();
+    const tiers = [["facil","🟢 Fáciles"], ["media","🟠 Medias"], ["dificil","🔴 Difíciles"]];
+    let html = tiers.map(([t, titulo]) => {
+      const items = MISIONES.filter(m => m.tier === t).map(m => {
+        const done = hechas.indexOf(m.id) !== -1;
+        return `<div class="mision ${done ? "hecha" : ""}">
+          <span class="mision-estado">${done ? "✅" : "🔒"}</span>
+          <span class="mision-texto">${m.texto}</span>
+          <span class="mision-premio">${m.premio}</span>
+        </div>`;
+      }).join("");
+      return `<div class="mision-grupo"><h4>${titulo}</h4>${items}</div>`;
+    }).join("");
+    const todas = hechas.length >= MISIONES.length;
+    html += `<div class="mision-exclusivo ${todas ? "desbloqueado" : ""}">
+      ${todas
+        ? "🌈🐐 ¡TODO COMPLETADO! Eres el G.O.A.T 🐐🌈"
+        : `🏅 Sube de rango: 🐣 Aprendiz (5) · ⭐ Crack (10) · 🌟 Estrella (15) · 🔥 Fenómeno (20) · 👑 Maestro (25) · 🐐 G.O.A.T (30). Las "e" dan 🌈 cromos y muchas dan 🪙 monedas. Llevas ${hechas.length}/100.`}
+    </div>`;
+    panel.innerHTML = html;
+  }
+
+  function toggleMisiones() {
+    const panel = document.getElementById("misiones-panel");
+    if (panel.style.display === "block") {
+      panel.style.display = "none";
+    } else {
+      renderMisiones();
+      panel.style.display = "block";
+    }
+  }
+
+  // ===== Tienda de sobres =====
+  function renderTienda() {
+    const panel = document.getElementById("tienda-panel");
+    const saldo = cargarMonedas();
+    const owned = cargarSobreCards();
+    let html = `<div class="tienda-saldo">🪙 Tienes <b>${saldo}</b> monedas</div>`;
+    html += SOBRES.map(s => {
+      const restantes = poolDeSobre(s).filter(id => owned.indexOf(id) === -1).length;
+      const noSePuede = saldo < s.precio || restantes === 0;
+      const nota = restantes === 0 ? "¡ya las tienes todas!" : `${restantes} cartas nuevas posibles`;
+      return `<div class="sobre-item">
+        <div><span class="sobre-emoji">${s.emoji}</span> <b>${s.nombre}</b><br><small>${nota}</small></div>
+        <button class="btn-comprar" data-sobre="${s.id}" ${noSePuede ? "disabled" : ""}>🪙 ${s.precio}</button>
+      </div>`;
+    }).join("");
+    html += `<div class="tienda-resultado" id="tienda-resultado"></div>`;
+    panel.innerHTML = html;
+    panel.querySelectorAll(".btn-comprar").forEach(b => {
+      b.onclick = () => comprarSobre(b.dataset.sobre);
+    });
+  }
+
+  function comprarSobre(sobreId) {
+    const sobre = SOBRES.find(s => s.id === sobreId);
+    const saldo = cargarMonedas();
+    if (saldo < sobre.precio) return;
+    const owned = cargarSobreCards();
+    const disponibles = poolDeSobre(sobre).filter(id => owned.indexOf(id) === -1);
+    if (!disponibles.length) return;
+    // Cobrar y sacar una carta al azar de las que aún no tienes
+    guardarMonedas(saldo - sobre.precio);
+    const elegidaId = disponibles[Math.floor(Math.random() * disponibles.length)];
+    owned.push(elegidaId);
+    guardarSobreCards(owned);
+    inyectarCromosDesbloqueados(); // ya puedes ficharla
+    actualizarMonedas();
+    actualizarBotonAlbum();        // actualizar la colección
+    mostrarSobreParaAbrir(CROMOS_TIENDA.find(c => c.especialId === elegidaId));
+    renderTienda(); // refrescar saldo y disponibilidad
+    if (coleccionCompleta()) setTimeout(celebrarColeccion, 1600); // tras revelar la última carta
+  }
+
+  // 1) Muestra el sobre cerrado para que lo toques
+  function mostrarSobreParaAbrir(carta) {
+    document.getElementById("sobre-contenido").innerHTML =
+      `<div class="sobre-titulo">¡Has comprado un sobre!</div>
+       <div class="sobre-sellado" id="sobre-sellado">
+         <div class="sobre-icono">🎁</div>
+         <div class="sobre-toca">👆 ¡Toca para abrir!</div>
+       </div>`;
+    document.getElementById("sobre-cerrar").style.display = "none"; // no puedes cerrar hasta abrir
+    document.getElementById("sobre-overlay").style.display = "flex";
+    document.getElementById("sobre-sellado").onclick = () => abrirSobreAnim(carta);
+  }
+
+  // 2) Al tocar: vibra, brilla, destello y despues aparece la carta
+  function abrirSobreAnim(carta) {
+    const sellado = document.getElementById("sobre-sellado");
+    if (!sellado || sellado.classList.contains("abriendo")) return; // evitar doble toque
+    sellado.classList.add("abriendo");
+    sonidoClic();
+    // Destello a mitad de la animacion
+    setTimeout(() => {
+      const flash = document.getElementById("sobre-flash");
+      flash.classList.remove("flash"); void flash.offsetWidth; flash.classList.add("flash");
+    }, 500);
+    // Revelar la carta al terminar
+    setTimeout(() => {
+      revelarCarta(carta);
+      sonidoGol(); lanzarConfeti();
+      document.getElementById("sobre-cerrar").style.display = "";
+    }, 1050);
+  }
+
+  // 3) Muestra el jugador conseguido
+  function revelarCarta(c) {
+    const fondo = FONDOS_ESPECIALES[c.tipo];
+    document.getElementById("sobre-contenido").innerHTML =
+      `<div class="sobre-titulo">🎁 ¡Nueva carta!</div>
+       <div class="carta cromo-especial carta-revelada" style="background:${fondo}">${contenidoCromo(c, c.pos)}</div>
+       <div class="sobre-modo">${c.modo === "pasado" ? "🕰️ Viaje al pasado" : "⚽ Mundial 2026"}</div>`;
+    document.getElementById("sobre-overlay").style.display = "flex";
+  }
+  function cerrarSobre() {
+    document.getElementById("sobre-overlay").style.display = "none";
+  }
+
+  function toggleTienda() {
+    const panel = document.getElementById("tienda-panel");
+    if (panel.style.display === "block") {
+      panel.style.display = "none";
+    } else {
+      renderTienda();
+      panel.style.display = "block";
+    }
+  }
+
+  // ===== Álbum de cromos (toda la colección de especiales) =====
+  function todosLosEspeciales() {
+    const hechas = cargarMisiones();
+    const sobre = cargarSobreCards();
+    return CROMOS_ESPECIALES.map(c => ({ c: c, tengo: hechas.indexOf(c.mision) !== -1 }))
+      .concat(CROMOS_TIENDA.map(c => ({ c: c, tengo: sobre.indexOf(c.especialId) !== -1 })));
+  }
+  function actualizarBotonAlbum() {
+    const lista = todosLosEspeciales();
+    const tengo = lista.filter(x => x.tengo).length;
+    const btn = document.getElementById("ver-album");
+    if (btn) btn.textContent = `📖 Mi colección (${tengo}/${lista.length})`;
+  }
+  function renderAlbum() {
+    const panel = document.getElementById("album-panel");
+    const lista = todosLosEspeciales();
+    const tengo = lista.filter(x => x.tengo).length;
+    let html = `<div class="album-contador">📖 Tienes <b>${tengo}/${lista.length}</b> cartas especiales</div>`;
+    html += `<div class="album-grid">` + lista.map(({ c, tengo }) => {
+      if (tengo) {
+        return `<div class="carta cromo-especial album-carta" style="background:${fondoCromo(c)}">${contenidoCromo(c, c.pos)}</div>`;
+      }
+      // Bloqueada: en gris, con el nombre para saber a quién buscar
+      return `<div class="carta album-carta album-bloqueada"><div class="contenido fifa">
+        <div class="fifa-top"><div class="fifa-topleft"><div class="fifa-rating">🔒</div><div class="fifa-pos">${c.pos}</div></div></div>
+        <div class="fifa-foto">❓</div><div class="fifa-nombre">${c.n}</div></div></div>`;
+    }).join("") + `</div>`;
+    panel.innerHTML = html;
+  }
+  function toggleAlbum() {
+    const panel = document.getElementById("album-panel");
+    if (panel.style.display === "block") {
+      panel.style.display = "none";
+    } else {
+      renderAlbum();
+      panel.style.display = "block";
+    }
+  }
+
+  // ===== Celebraciones (una para misiones, otra para la colección) =====
+  function celebrar(idOverlay, rondasConfeti) {
+    document.getElementById(idOverlay).style.display = "flex";
+    try { sonidoGol(); } catch (e) {}
+    for (let i = 0; i < (rondasConfeti || 4); i++) setTimeout(lanzarConfeti, i * 400);
+  }
+  function celebrarMisiones() {
+    try { if (localStorage.getItem("misionesCelebrado")) return; } catch (e) {}
+    try { localStorage.setItem("misionesCelebrado", "1"); } catch (e) {}
+    celebrar("celebra-misiones", 4);
+  }
+  function coleccionCompleta() {
+    return todosLosEspeciales().every(x => x.tengo);
+  }
+  function celebrarColeccion() {
+    if (!coleccionCompleta()) return;
+    try { if (localStorage.getItem("albumCelebrado")) return; } catch (e) {}
+    try { localStorage.setItem("albumCelebrado", "1"); } catch (e) {}
+    celebrar("celebra-coleccion", 6);
+  }
+  function cerrarCelebra(id) {
+    document.getElementById(id).style.display = "none";
+  }
+
+  // ===== Tarjeta para presumir un equipo guardado =====
+  function verTarjeta(idx) {
+    const eq = cargarEquipos()[idx];
+    if (!eq) return;
+    const nick = cargarUsuario() || "Jugador";
+    const rangoEl = document.getElementById("usuario-titulo");
+    const rangoTxt = (rangoEl.style.display !== "none" && rangoEl.textContent) ? rangoEl.textContent : "";
+    const jugadoresHTML = eq.jugadores.map(j =>
+      `<div class="tarjeta-jug"><span>${j.e} ${j.n}</span><b>★ ${j.m}</b></div>`).join("");
+    document.getElementById("tarjeta-contenido").innerHTML = `
+      <div class="tarjeta-titulo">⚽ ${eq.nombre || "Mi equipo"}</div>
+      <div class="tarjeta-sub">Por <b>${nick}</b>${rangoTxt ? " · " + rangoTxt : ""}</div>
+      <div class="tarjeta-media">Media del equipo: ★ ${eq.media}</div>
+      <div class="tarjeta-lista">${jugadoresHTML}</div>`;
+    document.getElementById("tarjeta-overlay").style.display = "flex";
+  }
+  function cerrarTarjeta() {
+    document.getElementById("tarjeta-overlay").style.display = "none";
+  }
+
+  // ===== Pantalla de inicio (portada) =====
+  function actualizarPortada() {
+    const nick = cargarUsuario();
+    const rangoEl = document.getElementById("usuario-titulo");
+    const rango = (rangoEl.style.display !== "none" && rangoEl.textContent) ? rangoEl.textContent : "";
+    const n = cargarMisiones().length;
+    document.getElementById("portada-usuario").innerHTML =
+      (nick ? `👤 <b>${nick}</b>` : "👤 Jugador") + (rango ? ` · ${rango}` : "") +
+      `<br>🎯 ${n}/${MISIONES.length} misiones · 🪙 ${cargarMonedas()} monedas`;
+  }
+  // Pinta un cromo decorativo en la portada
+  function pintarUnaCarta(id, jug, pos) {
+    const cont = document.getElementById(id);
+    cont.className = "portada-carta carta cromo-especial";
+    cont.style.background = fondoCromo(jug);
+    cont.innerHTML = contenidoCromo(jug, pos);
+  }
+  function pintarCartasPortada() {
+    pintarUnaCarta("carta-messi",   { n:"Messi", p:"🇦🇷 Argentina", m:99, e:"🐐", tipo:"arcoiris" }, "ED");
+    pintarUnaCarta("carta-cr7",     { n:"Cristiano Ronaldo", p:"🇵🇹 Portugal", m:98, e:"🐐", tipo:"rubi" }, "DC");
+    pintarUnaCarta("carta-haaland", { n:"Haaland", p:"🇳🇴 Noruega", m:97, e:"💥", tipo:"diamante" }, "DC");
+    pintarUnaCarta("carta-mbappe",  { n:"Mbappé", p:"🇫🇷 Francia", m:97, e:"⚡", tipo:"oro" }, "EI");
+  }
+
+  function mostrarPortada() {
+    actualizarPortada();
+    document.getElementById("portada").style.display = "flex";
+  }
+  function ocultarPortada() {
+    const p = document.getElementById("portada");
+    p.classList.add("saliendo");                 // se desvanece con zoom
+    setTimeout(() => {
+      p.style.display = "none";
+      p.classList.remove("saliendo");
+    }, 500);
+  }
+  // Pulsar Jugar: desvanece el menu y hace aparecer el juego
+  function jugar() {
+    ocultarPortada();
+    document.body.classList.add("jugando-entra"); // el campo aparece suavemente
+    setTimeout(() => document.body.classList.remove("jugando-entra"), 700);
+  }
+
+  // ===== Reto diario: cada dia un reto distinto =====
+  const RETOS = [
+    { texto:"Consigue un equipo de +86 de media", check:c => c.media > 86 },
+    { texto:"Ficha a un jugador de Brasil", check:c => c.paises.includes("Brasil") },
+    { texto:"Usa la formación 3-4-3", check:c => c.formacion === "3-4-3" },
+    { texto:"Junta 3 jugadores del mismo país", check:c => c.maxMismoPais >= 3 },
+    { texto:"Completa un equipo en el Viaje al pasado", check:c => c.modo === "pasado" },
+    { texto:"Ficha a un jugador de Francia", check:c => c.paises.includes("Francia") },
+    { texto:"Consigue un equipo de +89 de media", check:c => c.media > 89 },
+  ];
+  let retoMem = { fecha:"", hecho:false };
+
+  function retoDeHoy() {
+    const hoy = new Date();
+    const dia = Math.floor((hoy - new Date(hoy.getFullYear(), 0, 0)) / 86400000);
+    return { fechaStr: hoy.toLocaleDateString("es-ES"), reto: RETOS[dia % RETOS.length] };
+  }
+  function cargarRetoEstado() {
+    try { const g = localStorage.getItem("retoDiario"); if (g) return JSON.parse(g); }
+    catch (e) {}
+    return retoMem;
+  }
+  function guardarRetoEstado(v) {
+    retoMem = v;
+    try { localStorage.setItem("retoDiario", JSON.stringify(v)); } catch (e) {}
+  }
+  function actualizarBannerReto() {
+    const { fechaStr, reto } = retoDeHoy();
+    let estado = cargarRetoEstado();
+    if (estado.fecha !== fechaStr) { estado = { fecha: fechaStr, hecho: false }; guardarRetoEstado(estado); }
+    const banner = document.getElementById("reto-diario");
+    banner.classList.toggle("hecho", estado.hecho);
+    banner.innerHTML = estado.hecho
+      ? `🎯 Reto de hoy: <b>${reto.texto}</b> — ✅ ¡Completado! (+30 🪙)`
+      : `🎯 Reto de hoy: <b>${reto.texto}</b> — ⏳ pendiente · +30 🪙`;
+  }
+  function revisarReto(ctx) {
+    const { fechaStr, reto } = retoDeHoy();
+    let estado = cargarRetoEstado();
+    if (estado.fecha !== fechaStr) estado = { fecha: fechaStr, hecho: false };
+    if (!estado.hecho && reto.check(ctx)) {
+      estado.hecho = true;
+      guardarRetoEstado(estado);
+      actualizarBannerReto();
+      sumarMonedas(30); // el reto del día da 30 monedas 🪙
+      mostrarToastMision([{ texto: "Reto diario completado: +30 🪙", premio: "🎯" }]);
+    }
+  }
+
+  // Se llama al completar un 11: comprueba misiones y reto diario
+  function alCompletar(ctx) {
+    revisarMisiones(ctx);
+    revisarReto(ctx);
+  }
+
+  // ===== Nombre de usuario (arriba a la derecha) =====
+  let nombreUsuarioMem = "";
+  function cargarUsuario() {
+    try { return localStorage.getItem("nombreUsuario") || nombreUsuarioMem; }
+    catch (e) { return nombreUsuarioMem; }
+  }
+  function guardarUsuario(v) {
+    nombreUsuarioMem = v;
+    try { localStorage.setItem("nombreUsuario", v); } catch (e) {}
+  }
+
+  function empezar() {
+    indice = 0;
+    plantilla = [];
+    ultimoColocado = -1;
+    contador.textContent = "0";
+    mensajeFinal.innerHTML = "";
+    posBuscada.innerHTML = "";
+    cartasDiv.innerHTML = "";
+    reiniciar.style.display = "none";
+    boton.style.display = "inline-block";
+    boton.disabled = false;
+    // Banner segun el modo (contra maquina o 1 contra 1)
+    document.getElementById("turno-versus").textContent = contraMaquina
+      ? "🤖 Tú contra la máquina"
+      : versus
+        ? (turno === 1 ? "🔵 Turno del Jugador 1" : "🔴 Turno del Jugador 2")
+        : "";
+    dibujarCampo();
+  }
+
+  // Cambiar de modo de juego: actual (Mundial 2026) o pasado (leyendas)
+  function cambiarModo(modo) {
+    plantel = (modo === "pasado") ? leyendas : jugadores;
+    document.body.classList.toggle("modo-pasado", modo === "pasado"); // cesped mas oscuro
+    document.querySelectorAll(".btn-modo").forEach(b =>
+      b.classList.toggle("activa", b.dataset.modo === modo));
+    // Cerramos el catalogo por si estaba abierto (mostraba el otro plantel)
+    posMostrada = null;
+    document.getElementById("lista-jugadores").innerHTML = "";
+    document.querySelectorAll(".btn-pos").forEach(b => b.classList.remove("activa"));
+    // Cambiamos el subtitulo segun el modo
+    document.getElementById("subtitulo").textContent = (modo === "pasado")
+      ? "🕰️ ¡Ficha a las leyendas retiradas del fútbol y arma tu 11 histórico!"
+      : "Pulsa el botón, salen 4 jugadores y eliges el mejor. ¡11 veces para completar tu equipo!";
+    empezar(); // empezamos de cero con el plantel nuevo
+  }
+
+  // Activar/desactivar el modo 1 contra 1 (dos jugadores)
+  function toggleVersus() {
+    versus = !versus;
+    if (versus) apagarMaquina();  // no pueden estar los dos a la vez
+    turno = 1; equipo1 = null; equipo2 = null;
+    const btn = document.getElementById("btn-versus");
+    btn.textContent = versus ? "🆚 1 contra 1: ON" : "🆚 1 contra 1: OFF";
+    btn.classList.toggle("activo", versus);
+    empezar();
+  }
+  function apagarVersus() {
+    versus = false;
+    const btn = document.getElementById("btn-versus");
+    btn.textContent = "🆚 1 contra 1: OFF";
+    btn.classList.remove("activo");
+  }
+
+  // Activar/desactivar el modo contra la maquina (1 jugador)
+  function toggleMaquina() {
+    contraMaquina = !contraMaquina;
+    if (contraMaquina) apagarVersus(); // no pueden estar los dos a la vez
+    turno = 1; equipo1 = null; equipo2 = null;
+    const btn = document.getElementById("btn-maquina");
+    btn.textContent = contraMaquina ? "🤖 vs Máquina: ON" : "🤖 vs Máquina: OFF";
+    btn.classList.toggle("activo", contraMaquina);
+    empezar();
+  }
+  function apagarMaquina() {
+    contraMaquina = false;
+    const btn = document.getElementById("btn-maquina");
+    btn.textContent = "🤖 vs Máquina: OFF";
+    btn.classList.remove("activo");
+  }
+
+  // La maquina arma su propio equipo (elige al azar entre los mejores de cada posicion)
+  function generarEquipoCPU() {
+    const usados = [];
+    let suma = 0;
+    formacion.forEach(pos => {
+      const disp = plantel[pos].filter(j => !usados.some(u => u.n === j.n));
+      const top = disp.slice().sort((a, b) => b.m - a.m).slice(0, Math.min(6, disp.length));
+      const elegido = top[Math.floor(Math.random() * top.length)];
+      usados.push(elegido);
+      suma += elegido.m;
+    });
+    return Math.round(suma / formacion.length);
+  }
+
+  // Activar/desactivar la dificultad
+  function toggleDificil() {
+    dificil = !dificil;
+    const btn = document.getElementById("btn-dificil");
+    btn.textContent = dificil ? "🎲 Dificultad: Difícil" : "🎲 Dificultad: Fácil";
+    btn.classList.toggle("activo", dificil);
+  }
+
+  // Cambiar de formacion: pone la nueva tactica y reinicia el equipo
+  function elegirFormacion(nombre) {
+    formacion = formaciones[nombre];
+    formacionNombre = nombre;
+    document.querySelectorAll(".btn-formacion").forEach(b =>
+      b.classList.toggle("activa", b.dataset.f === nombre));
+    empezar(); // empezamos de cero con la formacion nueva
+  }
+
+  // Catalogo: mostrar TODOS los jugadores de una posicion
+  let posMostrada = null;
+  function verPosicion(pos) {
+    const panel = document.getElementById("lista-jugadores");
+    // Si vuelves a pulsar el mismo boton, se oculta la lista
+    if (posMostrada === pos) {
+      panel.innerHTML = "";
+      posMostrada = null;
+      document.querySelectorAll(".btn-pos").forEach(b => b.classList.remove("activa"));
+      return;
+    }
+    posMostrada = pos;
+    document.querySelectorAll(".btn-pos").forEach(b =>
+      b.classList.toggle("activa", b.dataset.pos === pos));
+    // Ordenamos de mejor a peor (por media) para ver primero a los cracks
+    const lista = plantel[pos].slice().sort((a, b) => b.m - a.m);
+    panel.innerHTML = lista.map(jug => {
+      const fondo = fondoCromo(jug);
+      const estilo = fondo ? `style="background:${fondo}"` : "";
+      const cls = jug.tipo ? "carta cromo-especial" : "carta";
+      return `<div class="${cls}" ${estilo}>${contenidoCromo(jug, pos)}</div>`;
+    }).join("");
+  }
+
+  // Buscador: encuentra jugadores por nombre en todas las posiciones del plantel activo
+  function buscarJugador(q) {
+    const panel = document.getElementById("lista-jugadores");
+    posMostrada = null;
+    document.querySelectorAll(".btn-pos").forEach(b => b.classList.remove("activa"));
+    q = q.trim().toLowerCase();
+    if (!q) { panel.innerHTML = ""; return; }
+    const encontrados = [];
+    Object.keys(plantel).forEach(pos => {
+      plantel[pos].forEach(j => {
+        if (j.n.toLowerCase().indexOf(q) !== -1) encontrados.push({ jug: j, pos: pos });
+      });
+    });
+    encontrados.sort((a, b) => b.jug.m - a.jug.m);
+    if (!encontrados.length) {
+      panel.innerHTML = "<p>Ningún jugador con ese nombre 🔍</p>";
+      return;
+    }
+    panel.innerHTML = encontrados.map(({ jug, pos }) => {
+      const fondo = fondoCromo(jug);
+      const estilo = fondo ? `style="background:${fondo}"` : "";
+      const cls = jug.tipo ? "carta cromo-especial" : "carta";
+      return `<div class="${cls}" ${estilo}>${contenidoCromo(jug, pos)}</div>`;
+    }).join("");
+  }
+
+  boton.onclick = buscar;
+  reiniciar.onclick = empezar;
+  document.getElementById("buscador").addEventListener("input", (e) => buscarJugador(e.target.value));
+  document.getElementById("ver-registros").onclick = toggleRegistros;
+  document.querySelectorAll(".btn-formacion").forEach(btn => {
+    btn.onclick = () => elegirFormacion(btn.dataset.f);
+  });
+  document.querySelectorAll(".btn-pos").forEach(btn => {
+    btn.onclick = () => verPosicion(btn.dataset.pos);
+  });
+  document.querySelectorAll(".btn-modo").forEach(btn => {
+    btn.onclick = () => cambiarModo(btn.dataset.modo);
+  });
+  document.getElementById("btn-versus").onclick = toggleVersus;
+  document.getElementById("btn-maquina").onclick = toggleMaquina;
+  document.getElementById("btn-dificil").onclick = toggleDificil;
+  document.getElementById("ver-misiones").onclick = toggleMisiones;
+  document.getElementById("ver-tienda").onclick = toggleTienda;
+  document.getElementById("ver-album").onclick = toggleAlbum;
+  document.getElementById("toggle-titulos").onclick = toggleTitulos;
+  document.getElementById("sobre-cerrar").onclick = cerrarSobre;
+  document.querySelectorAll(".celebra-btn").forEach(b => {
+    b.onclick = () => cerrarCelebra(b.dataset.cierra);
+  });
+  document.getElementById("sobre-overlay").onclick = (e) => { if (e.target.id === "sobre-overlay") cerrarSobre(); };
+  // Portada: botones de la pantalla de inicio y el boton de casa
+  document.getElementById("btn-home").onclick = mostrarPortada;
+  document.getElementById("btn-jugar").onclick = jugar;
+  document.getElementById("btn-portada-equipos").onclick = () => {
+    ocultarPortada();
+    const p = document.getElementById("registros");
+    renderRegistros(); p.style.display = "block";
+    document.querySelector(".zona-registros").scrollIntoView({ behavior: "smooth" });
+  };
+  document.getElementById("btn-portada-misiones").onclick = () => {
+    ocultarPortada();
+    const p = document.getElementById("misiones-panel");
+    renderMisiones(); p.style.display = "block";
+    document.querySelector(".zona-misiones").scrollIntoView({ behavior: "smooth" });
+  };
+  const usuarioInput = document.getElementById("usuario-input");
+  usuarioInput.value = cargarUsuario();                                  // recordar el nombre guardado
+  usuarioInput.addEventListener("input", () => guardarUsuario(usuarioInput.value)); // guardar al escribir
+  // Tarjeta: botones imprimir/cerrar y cerrar al pulsar fuera
+  document.getElementById("tarjeta-imprimir").onclick = () => window.print();
+  document.getElementById("tarjeta-cerrar").onclick = cerrarTarjeta;
+  document.getElementById("tarjeta-overlay").onclick = (e) => {
+    if (e.target.id === "tarjeta-overlay") cerrarTarjeta();
+  };
+  elegirFormacion("4-3-3");   // preparar todo con la formacion inicial
+  actualizarBotonRegistros(); // mostrar cuantos equipos hay guardados
+  actualizarBotonMisiones();  // mostrar cuantas misiones llevas
+  actualizarDecoracion();     // mostrar los adornos ganados
+  actualizarTitulo();         // mostrar el rango si ya lo ganaste
+  actualizarBannerReto();     // mostrar el reto de hoy
+  actualizarMonedas();        // mostrar tus monedas
+  actualizarBotonAlbum();     // mostrar cuántas cartas de la colección tienes
+  inyectarCromosDesbloqueados(); // volver a meter los cromos especiales y de sobres ya ganados
+  pintarCartasPortada();      // cromos de Messi y Cristiano a los lados del menu
+  mostrarPortada();           // arrancar en la pantalla de inicio
+  // Si ya lo tienes completo pero no habías visto la celebración, saltará una vez
+  if (cargarMisiones().length >= MISIONES.length) celebrarMisiones();
+  celebrarColeccion();
+  if (cargarMisiones().length >= MISIONES.length) {
+    document.getElementById("premio-exclusivo").style.display = "block";
+  }
+</script>
