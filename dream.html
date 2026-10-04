@@ -20,11 +20,24 @@
   /* Pantalla de inicio (portada) */
   #portada {
     position: fixed; inset: 0; z-index: 1200;
-    background: linear-gradient(160deg, #128a33, #0a5a24);
+    background-color: #0a5a24;
+    background-image:
+      url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 600" preserveAspectRatio="none"><g fill="none" stroke="white" stroke-opacity="0.22" stroke-width="3"><rect x="12" y="12" width="376" height="576"/><line x1="12" y1="300" x2="388" y2="300"/><circle cx="200" cy="300" r="56"/><circle cx="200" cy="300" r="4" fill="white" stroke="none"/><rect x="108" y="12" width="184" height="92"/><rect x="152" y="12" width="96" height="44"/><rect x="108" y="496" width="184" height="92"/><rect x="152" y="544" width="96" height="44"/></g></svg>'),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 44px, rgba(255,255,255,0) 44px 88px),
+      linear-gradient(160deg, #128a33, #0a5a24);
+    background-size: 100% 100%, auto, cover;
+    background-repeat: no-repeat, repeat, no-repeat;
     display: flex; align-items: center; justify-content: center;
     text-align: center; padding: 20px;
     transition: opacity .5s ease, transform .5s ease;
   }
+  /* Botón para reiniciar el equipo mientras lo montas */
+  #reiniciar-equipo {
+    background: #6c7a89; color: #fff; border: none; border-radius: 10px;
+    padding: 8px 16px; font-size: 15px; font-weight: bold; cursor: pointer;
+    margin-top: 8px; box-shadow: 0 3px 0 rgba(0,0,0,.3);
+  }
+  #reiniciar-equipo:active { transform: translateY(3px); box-shadow: 0 1px 0 rgba(0,0,0,.3); }
   /* Al pulsar Jugar, el menu se desvanece con un pequeño zoom */
   #portada.saliendo { opacity: 0; transform: scale(1.12); pointer-events: none; }
   /* El juego aparece suavemente */
@@ -814,6 +827,7 @@
 <div class="barra">Elegidos: <span id="contador">0</span> / 11</div>
 <br>
 <button id="boton">🔎 ¡Buscar jugadores!</button>
+<button id="reiniciar-equipo">🧹 Reiniciar equipo</button>
 <div class="posicion-buscada" id="posicion-buscada"></div>
 
 <div id="cartas"></div>
@@ -1933,7 +1947,7 @@
     { especialId:"y_rooney",  nivel:"oro", modo:"pasado", pos:"DC",  n:"Rooney", p:"🏴 Inglaterra", m:93, e:"🔥", tipo:"rubi" },
     // ===== 20 cromos especiales nuevos =====
     // Leyendas (Sobre Oro)
-    { especialId:"z_rivaldo", nivel:"oro", modo:"pasado", pos:"MCO", n:"Rivaldo", p:"🇧🇷 Brasil", m:94, e:"✨", tipo:"cosmico" },
+    { especialId:"z_rivaldo", nivel:"oro", modo:"pasado", pos:"EI",  n:"Rivaldo", p:"🇧🇷 Brasil", m:94, e:"✨", tipo:"cosmico" },
     { especialId:"z_robinho", nivel:"oro", modo:"pasado", pos:"EI",  n:"Robinho", p:"🇧🇷 Brasil", m:90, e:"⚡", tipo:"magico" },
     { especialId:"z_figo",    nivel:"oro", modo:"pasado", pos:"ED",  n:"Figo", p:"🇵🇹 Portugal", m:93, e:"⚡", tipo:"arcoiris" },
     { especialId:"z_raul",    nivel:"oro", modo:"pasado", pos:"DC",  n:"Raúl", p:"🇪🇸 España", m:92, e:"🔥", tipo:"oro" },
@@ -2806,6 +2820,7 @@
 
   boton.onclick = buscar;
   reiniciar.onclick = empezar;
+  document.getElementById("reiniciar-equipo").onclick = empezar;
   document.getElementById("buscador").addEventListener("input", (e) => buscarJugador(e.target.value));
   document.getElementById("ver-registros").onclick = toggleRegistros;
   document.querySelectorAll(".btn-formacion").forEach(btn => {
