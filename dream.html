@@ -169,6 +169,32 @@
   #btn-versus.activo { background:#ff851b; color:#3b1a00; border-color:#fff; }
   #btn-maquina.activo { background:#00b3a4; color:#00332f; border-color:#fff; }
   #btn-dificil.activo { background:#ff4136; color:#fff; border-color:#fff; }
+  #btn-torneo.activo { background:#ffd700; color:#5a3e00; border-color:#fff; }
+  /* ===== Partidos, torneo y estadísticas ===== */
+  #torneo-banner {
+    display:none; margin:10px auto; max-width:460px; padding:10px 14px;
+    background:linear-gradient(135deg,#8a6d00,#ffd700); color:#3b2a00;
+    border-radius:12px; font-weight:bold; box-shadow:0 2px 6px rgba(0,0,0,.3);
+  }
+  .torneo-progreso { font-size:18px; letter-spacing:4px; }
+  .marcador-vivo { font-size:24px; font-weight:900; margin:6px 0; }
+  .marcador-vivo b { font-size:30px; color:#ffd700; }
+  .narracion { font-size:16px; min-height:24px; }
+  .resultado-final { font-size:22px; font-weight:900; margin-bottom:4px; }
+  .marcador-final { font-size:26px; font-weight:900; }
+  .marcador-final b { color:#ffd700; font-size:32px; }
+  .mvp-linea, .quimica-linea, .premio-linea, .pen-linea { font-size:15px; margin-top:4px; }
+  .premio-linea { color:#ffd700; font-weight:bold; }
+  #stats-panel { display:none; margin:10px auto; max-width:380px; }
+  .stats-caja {
+    background:rgba(0,0,0,.25); border-radius:12px; padding:8px 14px; text-align:left;
+  }
+  .stats-fila {
+    display:flex; justify-content:space-between; padding:6px 0;
+    border-bottom:1px solid rgba(255,255,255,.12); font-size:15px;
+  }
+  .stats-fila:last-child { border-bottom:none; }
+  .stats-fila b { color:#ffd700; }
   #turno-versus {
     font-size:19px; font-weight:bold; margin-bottom:12px; min-height:24px;
   }
@@ -776,10 +802,14 @@
 <div class="extras">
   <button id="btn-versus" class="btn-extra">🆚 1 contra 1: OFF</button>
   <button id="btn-maquina" class="btn-extra">🤖 vs Máquina: OFF</button>
+  <button id="btn-torneo" class="btn-extra">🏆 Torneo: OFF</button>
   <button id="btn-dificil" class="btn-extra">🎲 Dificultad: Fácil</button>
+  <button id="btn-stats" class="btn-extra">📊 Estadísticas</button>
 </div>
 
 <div id="turno-versus"></div>
+<div id="torneo-banner"></div>
+<div id="stats-panel"></div>
 
 <div class="barra">Elegidos: <span id="contador">0</span> / 11</div>
 <br>
@@ -1231,6 +1261,15 @@
   let turno = 1;           // en el modo 1 contra 1: de quien es el turno (1 o 2)
   let equipo1 = null;      // equipo terminado del jugador 1
   let equipo2 = null;      // equipo terminado del jugador 2
+  // ===== Modo torneo: 4 rondas eliminatorias contra equipos rivales =====
+  const RIVALES_TORNEO = [
+    { nombre: "Lobos FC",       emoji: "🐺", sesgo: 12 }, // octavos (flojo)
+    { nombre: "Rayo Veloz",     emoji: "⚡", sesgo: 8 },  // cuartos
+    { nombre: "Muralla United", emoji: "🛡️", sesgo: 5 },  // semifinal
+    { nombre: "Galácticos",     emoji: "👑", sesgo: 3 },  // final (durísimo)
+  ];
+  const RONDAS_TORNEO = ["Octavos", "Cuartos", "Semifinal", "FINAL"];
+  let torneo = { activo: false, ronda: 0, ganados: 0 }; // ronda 0..3
 
   const boton = document.getElementById("boton");
   const cartasDiv = document.getElementById("cartas");
@@ -1338,62 +1377,148 @@
   }
 
   // Al completar los 11
-  function terminar() {
+  // Recompensa en monedas por el resultado de un partido
+  function recompensaPartido(gano, empate, esTorneo) {
+    let c = 0;
+    if (esTorneo) c = gano ? 30 : 0;
+    else c = gano ? 20 : empate ? 5 : 0;
+    if (c > 0) sumarMonedas(c);
+    return c;
+  }
+  // MVP de un lado del partido (el que más goles marcó; si nadie, el de más media)
+  function mvpDe(eq, sim, lado) {
+    const cuenta = {};
+    sim.eventos.filter(e => e.lado === lado).forEach(e => { cuenta[e.autor.n] = (cuenta[e.autor.n] || 0) + 1; });
+    let best = null, bn = 0;
+    eq.jugadores.forEach(j => { const g = cuenta[j.n] || 0; if (g > bn) { bn = g; best = j; } });
+    return best || eq.jugadores.reduce((a, b) => (b.m > a.m ? b : a));
+  }
+
+  async function terminar() {
     boton.disabled = true;
     boton.style.display = "none";
-    reiniciar.style.display = "inline-block";
-    const media = Math.round(plantilla.reduce((s,j) => s + j.m, 0) / 11);
-    sonidoGol();     // 🔊 ¡goool!
-    lanzarConfeti(); // 🎊
+    const media = Math.round(plantilla.reduce((s, j) => s + j.m, 0) / 11);
     if (media > 93) sumarMonedas(60); // 🪙 bonus por un equipazo de +93 de media
+    const bonus93 = media > 93 ? " · 💰 ¡Equipazo! +60 🪙" : "";
 
-    if (contraMaquina) {
-      // La maquina arma su equipo y comparamos al instante
-      const cpuMedia = generarEquipoCPU();
-      let resultado;
-      if (media > cpuMedia)      resultado = "🎉 ¡Ganas tú!";
-      else if (cpuMedia > media) resultado = "🤖 ¡Gana la máquina!";
-      else                       resultado = "🤝 ¡Empate!";
-      mensajeFinal.innerHTML = `${resultado} <br>🧑 Tú: ★${media} · 🤖 Máquina: ★${cpuMedia}`;
-      reiniciar.textContent = "🔄 Jugar otra vez";
-      alCompletar(contextoMision(media, media > cpuMedia)); // ganar a la maquina cuenta como ganar un 1c1
-    } else if (versus) {
-      // Modo 1 contra 1
-      if (turno === 1) {
-        equipo1 = { media: media };
-        turno = 2;
-        document.getElementById("turno-versus").textContent = "🔴 Turno del Jugador 2";
-        mensajeFinal.innerHTML = `🔵 <b>Jugador 1</b>: media ★${media}. <br>¡Ahora arma el equipo del Jugador 2!`;
-        reiniciar.textContent = "➡️ ¡Turno del Jugador 2!";
-        alCompletar(contextoMision(media, false));
-      } else {
-        equipo2 = { media: media };
-        turno = 1; // preparado para otra partida
-        document.getElementById("turno-versus").textContent = "";
-        const m1 = equipo1.media, m2 = equipo2.media;
-        let resultado;
-        if (m1 > m2)      resultado = `🔵 ¡Gana el Jugador 1!`;
-        else if (m2 > m1) resultado = `🔴 ¡Gana el Jugador 2!`;
-        else              resultado = `🤝 ¡Empate!`;
-        mensajeFinal.innerHTML = `🏆 ${resultado} <br>Jugador 1: ★${m1} · Jugador 2: ★${m2}`;
+    if (torneo.activo)   { await partidoTorneo(media, bonus93);   return; }
+    if (contraMaquina)   { await partidoVsMaquina(media, bonus93); return; }
+    if (versus)          { await partidoVersus(media, bonus93);   return; }
+
+    // ===== Modo normal: media, MVP y química =====
+    reiniciar.style.display = "inline-block";
+    sonidoGol(); lanzarConfeti();
+    const mvp = plantilla.reduce((a, b) => (b.m > a.m ? b : a));
+    const maxPais = quimicaMax(plantilla);
+    mensajeFinal.innerHTML =
+      `🏆 ¡Plantilla completa! · Media <b>★ ${media}</b>` +
+      `<br>👑 MVP: <b>${mvp.e} ${mvp.n}</b> (★${mvp.m}) · 🔗 Química: ${quimicaTexto(maxPais)}` +
+      (media > 93 ? " <br>💰 ¡Equipazo! +60 🪙" : "");
+    reiniciar.textContent = "🔄 Jugar otra vez";
+    guardarEquipo(media); // guardamos este equipo en los registros
+    alCompletar(contextoMision(media, false));
+  }
+
+  async function partidoVsMaquina(media, bonus93) {
+    const yo = equipoDeMiPlantilla(cargarUsuario() || "Tú", "🧑");
+    const cpu = equipoCPU("Máquina", "🤖", dificil ? 4 : 7);
+    const sim = simularPartido(yo, cpu);
+    bloquearDuranteNarracion(true);
+    await narrarPartido(yo, cpu, sim, `<div class="quimica-linea">🔗 Tu química: ${quimicaTexto(yo.quimicaMax)}${bonus93}</div>`);
+    bloquearDuranteNarracion(false);
+    const gano = sim.gA > sim.gB, empate = sim.gA === sim.gB;
+    registrarPartido(sim.gA, sim.gB);
+    const c = recompensaPartido(gano, empate, false);
+    const resu = gano ? "🎉 ¡Ganas tú!" : empate ? "🤝 ¡Empate!" : "🤖 ¡Gana la máquina!";
+    const mvp = mvpDe(yo, sim, "A");
+    mensajeFinal.innerHTML =
+      `<div class="resultado-final">${resu}</div>` +
+      `<div class="marcador-final">${yo.emoji} Tú <b>${sim.gA} - ${sim.gB}</b> Máquina ${cpu.emoji}</div>` +
+      `<div class="mvp-linea">⭐ MVP: ${mvp.e} <b>${mvp.n}</b> · 🔗 ${quimicaTexto(yo.quimicaMax)}</div>` +
+      (c ? `<div class="premio-linea">🪙 +${c} monedas</div>` : "");
+    if (gano) lanzarConfeti();
+    reiniciar.textContent = "🔄 Jugar otra vez";
+    alCompletar(contextoMision(media, gano));
+  }
+
+  async function partidoVersus(media, bonus93) {
+    if (turno === 1) {
+      equipo1 = equipoDeMiPlantilla("Jugador 1", "🔵");
+      turno = 2;
+      document.getElementById("turno-versus").textContent = "🔴 Turno del Jugador 2";
+      mensajeFinal.innerHTML = `🔵 <b>Jugador 1</b> listo (media ★${media}${bonus93}). <br>¡Ahora arma el equipo del Jugador 2!`;
+      reiniciar.textContent = "➡️ ¡Turno del Jugador 2!";
+      reiniciar.style.display = "inline-block";
+      alCompletar(contextoMision(media, false));
+      return;
+    }
+    equipo2 = equipoDeMiPlantilla("Jugador 2", "🔴");
+    turno = 1; // listo para otra partida
+    document.getElementById("turno-versus").textContent = "";
+    const sim = simularPartido(equipo1, equipo2);
+    bloquearDuranteNarracion(true);
+    await narrarPartido(equipo1, equipo2, sim, "");
+    bloquearDuranteNarracion(false);
+    let resu;
+    if (sim.gA > sim.gB) resu = "🔵 ¡Gana el Jugador 1!";
+    else if (sim.gB > sim.gA) resu = "🔴 ¡Gana el Jugador 2!";
+    else resu = "🤝 ¡Empate!";
+    mensajeFinal.innerHTML =
+      `<div class="resultado-final">${resu}</div>` +
+      `<div class="marcador-final">🔵 J1 <b>${sim.gA} - ${sim.gB}</b> J2 🔴</div>`;
+    if (sim.gA !== sim.gB) lanzarConfeti();
+    reiniciar.textContent = "🔄 Jugar otra vez";
+    alCompletar(contextoMision(media, sim.gA !== sim.gB));
+  }
+
+  async function partidoTorneo(media, bonus93) {
+    const r = RIVALES_TORNEO[torneo.ronda];
+    const yo = equipoDeMiPlantilla(cargarUsuario() || "Tú", "🧑");
+    const rival = equipoCPU(r.nombre, r.emoji, r.sesgo);
+    const sim = simularPartido(yo, rival);
+    bloquearDuranteNarracion(true);
+    await narrarPartido(yo, rival, sim, `<div class="quimica-linea">🏆 ${RONDAS_TORNEO[torneo.ronda]} · 🔗 Tu química: ${quimicaTexto(yo.quimicaMax)}${bonus93}</div>`);
+    // Empate en una eliminatoria → penaltis
+    let pen = null;
+    if (sim.gA === sim.gB) pen = tandaPenaltis(yo, rival);
+    bloquearDuranteNarracion(false);
+    const gano = sim.gA > sim.gB || (pen && pen.a > pen.b);
+    registrarPartido(sim.gA, sim.gB); // cuenta el marcador del tiempo reglamentario
+    const mvp = mvpDe(yo, sim, "A");
+    const penTxt = pen ? `<div class="pen-linea">🥅 Penaltis: ${pen.a} - ${pen.b}</div>` : "";
+    let linResult, cobro = "";
+    if (gano) {
+      const c = recompensaPartido(true, false, true);
+      cobro = `<div class="premio-linea">🪙 +${c} monedas</div>`;
+      linResult = "✅ ¡Pasas de ronda!";
+      torneo.ronda++;
+      if (torneo.ronda >= RIVALES_TORNEO.length) {
+        const s = cargarStats(); s.copas++; guardarStats(s);
+        sumarMonedas(200);
+        linResult = "🏆 ¡¡CAMPEÓN DEL TORNEO!!";
+        cobro = `<div class="premio-linea">🏆 +200 monedas de campeón 🪙</div>`;
+        for (let i = 0; i < 8; i++) setTimeout(lanzarConfeti, i * 350);
+        salirTorneo();
         reiniciar.textContent = "🔄 Jugar otra vez";
-        alCompletar(contextoMision(media, m1 !== m2)); // hay ganador => cuenta como "ganar un 1c1"
+      } else {
+        actualizarBannerTorneo();
+        const sig = RIVALES_TORNEO[torneo.ronda];
+        reiniciar.textContent = `➡️ Siguiente: ${sig.emoji} ${sig.nombre}`;
       }
     } else {
-      // Modo normal: media, MVP y química
-      const mvp = plantilla.reduce((a, b) => (b.m > a.m ? b : a));
-      const cuenta = {};
-      plantilla.forEach(j => { const p = nombrePais(j.p); cuenta[p] = (cuenta[p] || 0) + 1; });
-      const maxPais = Math.max.apply(null, Object.values(cuenta));
-      const quimica = maxPais >= 6 ? "🔥 Máxima" : maxPais >= 4 ? "💪 Alta" : maxPais >= 3 ? "👍 Media" : "Baja";
-      const bonus93 = media > 93 ? " <br>💰 ¡Equipazo! +60 🪙" : "";
-      mensajeFinal.innerHTML =
-        `🏆 ¡Plantilla completa! · Media <b>★ ${media}</b>` +
-        `<br>👑 MVP: <b>${mvp.e} ${mvp.n}</b> (★${mvp.m}) · 🔗 Química: ${quimica}` + bonus93;
+      linResult = "❌ Eliminado del torneo";
+      salirTorneo();
       reiniciar.textContent = "🔄 Jugar otra vez";
-      guardarEquipo(media); // guardamos este equipo en los registros
-      alCompletar(contextoMision(media, false));
     }
+    mensajeFinal.innerHTML =
+      `<div class="resultado-final">${linResult}</div>` +
+      `<div class="marcador-final">${yo.emoji} Tú <b>${sim.gA} - ${sim.gB}</b> ${rival.nombre} ${rival.emoji}</div>` +
+      penTxt +
+      `<div class="mvp-linea">⭐ MVP: ${mvp.e} <b>${mvp.n}</b></div>` +
+      cobro;
+    if (gano) lanzarConfeti();
+    reiniciar.style.display = "inline-block";
+    alCompletar(contextoMision(media, gano));
   }
 
   // ===== Sonidos (se generan solos, sin archivos) =====
@@ -1806,6 +1931,29 @@
     { especialId:"y_batistuta",nivel:"oro", modo:"pasado", pos:"DC", n:"Batistuta", p:"🇦🇷 Argentina", m:95, e:"🔥", tipo:"fiesta" },
     { especialId:"y_zlatan",  nivel:"oro", modo:"pasado", pos:"DC",  n:"Zlatan", p:"🇸🇪 Suecia", m:95, e:"🔥", tipo:"magico" },
     { especialId:"y_rooney",  nivel:"oro", modo:"pasado", pos:"DC",  n:"Rooney", p:"🏴 Inglaterra", m:93, e:"🔥", tipo:"rubi" },
+    // ===== 20 cromos especiales nuevos =====
+    // Leyendas (Sobre Oro)
+    { especialId:"z_rivaldo", nivel:"oro", modo:"pasado", pos:"MCO", n:"Rivaldo", p:"🇧🇷 Brasil", m:94, e:"✨", tipo:"cosmico" },
+    { especialId:"z_robinho", nivel:"oro", modo:"pasado", pos:"EI",  n:"Robinho", p:"🇧🇷 Brasil", m:90, e:"⚡", tipo:"magico" },
+    { especialId:"z_figo",    nivel:"oro", modo:"pasado", pos:"ED",  n:"Figo", p:"🇵🇹 Portugal", m:93, e:"⚡", tipo:"arcoiris" },
+    { especialId:"z_raul",    nivel:"oro", modo:"pasado", pos:"DC",  n:"Raúl", p:"🇪🇸 España", m:92, e:"🔥", tipo:"oro" },
+    { especialId:"z_sheva",   nivel:"oro", modo:"pasado", pos:"DC",  n:"Shevchenko", p:"🇺🇦 Ucrania", m:92, e:"🔥", tipo:"diamante" },
+    { especialId:"z_drogba",  nivel:"oro", modo:"pasado", pos:"DC",  n:"Drogba", p:"🇨🇮 Costa de Marfil", m:92, e:"🔥", tipo:"magico" },
+    { especialId:"z_calberto",nivel:"oro", modo:"pasado", pos:"LD",  n:"Carlos Alberto", p:"🇧🇷 Brasil", m:91, e:"🛡️", tipo:"fiesta" },
+    { especialId:"z_beckham", nivel:"oro", modo:"pasado", pos:"MC",  n:"Beckham", p:"🏴 Inglaterra", m:91, e:"🎯", tipo:"rubi" },
+    { especialId:"z_cantona", nivel:"oro", modo:"pasado", pos:"MCO", n:"Cantona", p:"🇫🇷 Francia", m:91, e:"✨", tipo:"fiesta" },
+    { especialId:"z_deco",    nivel:"oro", modo:"pasado", pos:"MC",  n:"Deco", p:"🇵🇹 Portugal", m:90, e:"🎯", tipo:"arcoiris" },
+    // Estrellas actuales (Sobre Plata)
+    { especialId:"z_vlahovic",nivel:"plata", modo:"actual", pos:"DC",  n:"Vlahović", p:"🇷🇸 Serbia", m:90, e:"🔥", tipo:"oro" },
+    { especialId:"z_raphinha",nivel:"plata", modo:"actual", pos:"ED",  n:"Raphinha", p:"🇧🇷 Brasil", m:91, e:"⚡", tipo:"diamante" },
+    { especialId:"z_olmo",    nivel:"plata", modo:"actual", pos:"MCO", n:"Dani Olmo", p:"🇪🇸 España", m:90, e:"✨", tipo:"magico" },
+    { especialId:"z_gakpo",   nivel:"plata", modo:"actual", pos:"EI",  n:"Gakpo", p:"🇳🇱 Países Bajos", m:90, e:"⚡", tipo:"fiesta" },
+    { especialId:"z_macall",  nivel:"plata", modo:"actual", pos:"MC",  n:"Mac Allister", p:"🇦🇷 Argentina", m:90, e:"🎯", tipo:"arcoiris" },
+    { especialId:"z_szobo",   nivel:"plata", modo:"actual", pos:"MCO", n:"Szoboszlai", p:"🇭🇺 Hungría", m:89, e:"✨", tipo:"rubi" },
+    { especialId:"z_cama",    nivel:"plata", modo:"actual", pos:"MCD", n:"Camavinga", p:"🇫🇷 Francia", m:89, e:"🧱", tipo:"diamante" },
+    { especialId:"z_guler",   nivel:"plata", modo:"actual", pos:"MCO", n:"Arda Güler", p:"🇹🇷 Turquía", m:88, e:"✨", tipo:"fiesta" },
+    { especialId:"z_cubarsi", nivel:"plata", modo:"actual", pos:"DFC", n:"Cubarsí", p:"🇪🇸 España", m:89, e:"🛡️", tipo:"diamante" },
+    { especialId:"z_mainoo",  nivel:"plata", modo:"actual", pos:"MC",  n:"Mainoo", p:"🏴 Inglaterra", m:88, e:"🎯", tipo:"magico" },
   ];
   const SOBRES = [
     { id:"plata",    nombre:"Sobre Plata",    emoji:"🥈", precio:60,  nivel:"plata" },
@@ -2356,7 +2504,7 @@
   // Activar/desactivar el modo 1 contra 1 (dos jugadores)
   function toggleVersus() {
     versus = !versus;
-    if (versus) apagarMaquina();  // no pueden estar los dos a la vez
+    if (versus) { apagarMaquina(); salirTorneo(); }  // no pueden estar a la vez
     turno = 1; equipo1 = null; equipo2 = null;
     const btn = document.getElementById("btn-versus");
     btn.textContent = versus ? "🆚 1 contra 1: ON" : "🆚 1 contra 1: OFF";
@@ -2373,7 +2521,7 @@
   // Activar/desactivar el modo contra la maquina (1 jugador)
   function toggleMaquina() {
     contraMaquina = !contraMaquina;
-    if (contraMaquina) apagarVersus(); // no pueden estar los dos a la vez
+    if (contraMaquina) { apagarVersus(); salirTorneo(); } // no pueden estar a la vez
     turno = 1; equipo1 = null; equipo2 = null;
     const btn = document.getElementById("btn-maquina");
     btn.textContent = contraMaquina ? "🤖 vs Máquina: ON" : "🤖 vs Máquina: OFF";
@@ -2399,6 +2547,194 @@
       suma += elegido.m;
     });
     return Math.round(suma / formacion.length);
+  }
+
+  // ================== MOTOR DE PARTIDOS ==================
+  // La química (jugadores del mismo país) da un pequeño empujón al ataque
+  function quimicaMax(arr) {
+    const c = {};
+    arr.forEach(j => { const p = nombrePais(j.p); c[p] = (c[p] || 0) + 1; });
+    const vals = Object.values(c);
+    return vals.length ? Math.max.apply(null, vals) : 0;
+  }
+  function quimicaPts(maxPais) {
+    if (maxPais >= 6) return 4;   // 🔥 máxima
+    if (maxPais >= 4) return 2;   // 💪 alta
+    if (maxPais >= 3) return 1;   // 👍 media
+    return 0;
+  }
+  function quimicaTexto(maxPais) {
+    if (maxPais >= 6) return "🔥 Máxima";
+    if (maxPais >= 4) return "💪 Alta";
+    if (maxPais >= 3) return "👍 Media";
+    return "Baja";
+  }
+  // Construye el objeto-equipo del jugador a partir de su plantilla actual
+  function equipoDeMiPlantilla(nombre, emoji) {
+    const jug = plantilla.map((j, i) => ({ n: j.n, e: j.e, p: j.p, m: j.m, pos: formacion[i] }));
+    const media = Math.round(plantilla.reduce((s, j) => s + j.m, 0) / 11);
+    const mp = quimicaMax(jug);
+    return { nombre, emoji, media, quimica: quimicaPts(mp), quimicaMax: mp, jugadores: jug };
+  }
+  // La máquina/rival arma un 11 real (sesgo bajo = elige entre los mejores = equipo más fuerte)
+  function equipoCPU(nombre, emoji, sesgo) {
+    const usados = [];
+    const jug = [];
+    let suma = 0;
+    formacion.forEach(pos => {
+      const ord = plantel[pos].filter(j => !usados.some(u => u.n === j.n)).sort((a, b) => b.m - a.m);
+      const top = ord.slice(0, Math.min(sesgo, ord.length));
+      const el = top[Math.floor(Math.random() * top.length)] || ord[0];
+      usados.push(el); suma += el.m;
+      jug.push({ n: el.n, e: el.e, p: el.p, m: el.m, pos });
+    });
+    const media = Math.round(suma / formacion.length);
+    const mp = quimicaMax(jug);
+    return { nombre, emoji, media, quimica: quimicaPts(mp), quimicaMax: mp, jugadores: jug };
+  }
+  // Nº de goles aleatorio (distribución de Poisson, método de Knuth)
+  function poisson(lam) {
+    lam = Math.max(0.05, lam);
+    const L = Math.exp(-lam);
+    let k = 0, p = 1;
+    do { k++; p *= Math.random(); } while (p > L);
+    return k - 1;
+  }
+  // Elige quién marca: pesa más a los delanteros y menos a defensas/portero
+  const PESO_GOL = { DC:6, ED:4, EI:4, MCO:4, MC:2, MCD:1, LD:1, LI:1, DFC:0.7, POR:0.05 };
+  function elegirGoleador(eq) {
+    const cand = eq.jugadores;
+    let total = 0;
+    cand.forEach(j => total += (PESO_GOL[j.pos] || 1));
+    let r = Math.random() * total;
+    for (const j of cand) { r -= (PESO_GOL[j.pos] || 1); if (r <= 0) return j; }
+    return cand[cand.length - 1];
+  }
+  // Simula un partido entre dos equipos y devuelve goles + lista de goles con minuto y autor
+  function simularPartido(A, B) {
+    const diff = (A.media + A.quimica) - (B.media + B.quimica);
+    const base = 1.35;
+    const lamA = Math.min(5, Math.max(0.15, base + diff * 0.05));
+    const lamB = Math.min(5, Math.max(0.15, base - diff * 0.05));
+    const gA = Math.min(6, poisson(lamA));
+    const gB = Math.min(6, poisson(lamB));
+    const eventos = [];
+    for (let i = 0; i < gA; i++) eventos.push({ lado: "A", min: 1 + Math.floor(Math.random() * 90), autor: elegirGoleador(A) });
+    for (let i = 0; i < gB; i++) eventos.push({ lado: "B", min: 1 + Math.floor(Math.random() * 90), autor: elegirGoleador(B) });
+    eventos.sort((a, b) => a.min - b.min);
+    return { gA, gB, eventos };
+  }
+  // Tanda de penaltis (para desempatar en el torneo): mejor de 5, muerte súbita si hace falta
+  function tandaPenaltis(A, B) {
+    const probA = 0.75 + (A.media - B.media) * 0.004;
+    const probB = 0.75 + (B.media - A.media) * 0.004;
+    let a = 0, b = 0;
+    for (let i = 0; i < 5; i++) { if (Math.random() < probA) a++; if (Math.random() < probB) b++; }
+    while (a === b) { const ma = Math.random() < probA, mb = Math.random() < probB; if (ma) a++; if (mb) b++; }
+    return { a, b };
+  }
+
+  // ===== Estadísticas del jugador =====
+  const STATS0 = { jugados:0, ganados:0, empates:0, perdidos:0, golesF:0, golesC:0, mejorMarcador:"-", racha:0, mejorRacha:0, copas:0 };
+  function cargarStats() {
+    try { const g = localStorage.getItem("statsDream"); if (g) return Object.assign({}, STATS0, JSON.parse(g)); } catch (e) {}
+    return Object.assign({}, STATS0);
+  }
+  function guardarStats(s) { try { localStorage.setItem("statsDream", JSON.stringify(s)); } catch (e) {} }
+  // Registra el resultado de un partido tuyo (misGoles vs susGoles)
+  function registrarPartido(misGoles, susGoles) {
+    const s = cargarStats();
+    s.jugados++; s.golesF += misGoles; s.golesC += susGoles;
+    if (misGoles > susGoles) { s.ganados++; s.racha++; if (s.racha > s.mejorRacha) s.mejorRacha = s.racha; }
+    else if (misGoles < susGoles) { s.perdidos++; s.racha = 0; }
+    else { s.empates++; }
+    const marcador = misGoles + "-" + susGoles;
+    if (misGoles > susGoles && misGoles - susGoles >= diferenciaDe(s.mejorMarcador)) s.mejorMarcador = marcador;
+    guardarStats(s);
+    return s;
+  }
+  function diferenciaDe(m) { if (!m || m === "-") return 1; const p = m.split("-"); return (parseInt(p[0]) - parseInt(p[1])) || 0; }
+  function renderStats() {
+    const s = cargarStats();
+    const panel = document.getElementById("stats-panel");
+    panel.innerHTML = `
+      <div class="stats-caja">
+        <div class="stats-fila"><span>⚽ Partidos jugados</span><b>${s.jugados}</b></div>
+        <div class="stats-fila"><span>🎉 Ganados</span><b>${s.ganados}</b></div>
+        <div class="stats-fila"><span>🤝 Empatados</span><b>${s.empates}</b></div>
+        <div class="stats-fila"><span>😢 Perdidos</span><b>${s.perdidos}</b></div>
+        <div class="stats-fila"><span>🥅 Goles a favor / en contra</span><b>${s.golesF} / ${s.golesC}</b></div>
+        <div class="stats-fila"><span>🔝 Mejor victoria</span><b>${s.mejorMarcador}</b></div>
+        <div class="stats-fila"><span>🔥 Racha actual / mejor</span><b>${s.racha} / ${s.mejorRacha}</b></div>
+        <div class="stats-fila"><span>🏆 Copas ganadas</span><b>${s.copas}</b></div>
+      </div>`;
+  }
+  function toggleStats() {
+    const panel = document.getElementById("stats-panel");
+    if (panel.style.display === "block") { panel.style.display = "none"; return; }
+    renderStats(); panel.style.display = "block";
+  }
+
+  // ===== Narración del partido: va mostrando los goles poco a poco =====
+  // Devuelve una promesa que se resuelve al terminar la narración
+  function narrarPartido(A, B, sim, cabecera) {
+    return new Promise(resolve => {
+      let ga = 0, gb = 0, i = 0;
+      const pintar = (extra) => {
+        mensajeFinal.innerHTML =
+          `${cabecera || ""}` +
+          `<div class="marcador-vivo">${A.emoji} ${A.nombre} <b>${ga} - ${gb}</b> ${B.nombre} ${B.emoji}</div>` +
+          `<div class="narracion">${extra || ""}</div>`;
+      };
+      pintar("⚽ ¡Empieza el partido!");
+      const paso = () => {
+        if (i >= sim.eventos.length) {
+          setTimeout(() => resolve(), 500);
+          return;
+        }
+        const ev = sim.eventos[i++];
+        if (ev.lado === "A") ga++; else gb++;
+        const eq = ev.lado === "A" ? A : B;
+        try { sonidoGol(); } catch (e) {}
+        pintar(`⚽ ¡GOOOL de ${ev.autor.e} <b>${ev.autor.n}</b>! <small>(${eq.nombre}, min ${ev.min})</small>`);
+        setTimeout(paso, 900);
+      };
+      setTimeout(paso, 900);
+    });
+  }
+
+  // Deshabilita botones mientras se narra el partido
+  function bloquearDuranteNarracion(b) {
+    boton.disabled = b;
+    reiniciar.disabled = b;
+    reiniciar.style.display = b ? "none" : "inline-block";
+  }
+
+  // ===== Modo torneo =====
+  function actualizarBannerTorneo() {
+    const banner = document.getElementById("torneo-banner");
+    if (!torneo.activo) { banner.innerHTML = ""; banner.style.display = "none"; return; }
+    const r = RIVALES_TORNEO[torneo.ronda];
+    const pelota = RIVALES_TORNEO.map((x, k) => k < torneo.ronda ? "✅" : k === torneo.ronda ? "⚽" : "⚪").join(" ");
+    banner.style.display = "block";
+    banner.innerHTML = `🏆 <b>Torneo — ${RONDAS_TORNEO[torneo.ronda]}</b> · Rival: ${r.emoji} <b>${r.nombre}</b><br><span class="torneo-progreso">${pelota}</span>`;
+  }
+  function empezarTorneo() {
+    torneo = { activo: true, ronda: 0, ganados: 0 };
+    apagarVersus(); apagarMaquina();
+    const btn = document.getElementById("btn-torneo");
+    btn.textContent = "🏆 Torneo: ON"; btn.classList.add("activo");
+    actualizarBannerTorneo();
+    empezar();
+  }
+  function salirTorneo() {
+    torneo.activo = false;
+    const btn = document.getElementById("btn-torneo");
+    btn.textContent = "🏆 Torneo: OFF"; btn.classList.remove("activo");
+    actualizarBannerTorneo();
+  }
+  function toggleTorneo() {
+    if (torneo.activo) salirTorneo(); else empezarTorneo();
   }
 
   // Activar/desactivar la dificultad
@@ -2483,6 +2819,8 @@
   });
   document.getElementById("btn-versus").onclick = toggleVersus;
   document.getElementById("btn-maquina").onclick = toggleMaquina;
+  document.getElementById("btn-torneo").onclick = toggleTorneo;
+  document.getElementById("btn-stats").onclick = toggleStats;
   document.getElementById("btn-dificil").onclick = toggleDificil;
   document.getElementById("ver-misiones").onclick = toggleMisiones;
   document.getElementById("ver-tienda").onclick = toggleTienda;
